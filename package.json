@@ -1,0 +1,34 @@
+{
+  "private": true,
+  "name": "acdeploy",
+  "version": "0.0.1",
+  "description": "Automatic Container Deployment (acdeploy): keeping you cool while deploying",
+  "bin": {
+    "acdeploy": "./dist/index.js"
+  },
+  "scripts": {
+    "start": "npm run build && node ./build/main.js",
+    "build": "rm -rf typings ; ./node_modules/.bin/typings install && ./node_modules/gulp/bin/gulp.js build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://remie@github.com/remie/acdeploy.git"
+  },
+  "author": "Remie Bolte <r.bolte@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^9.4.7",
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-sourcemaps": "^2.6.1",
+    "gulp-tslint": "^8.1.3",
+    "gulp-typescript": "^3.1.6",
+    "tslint": "^5.2.0",
+    "typings": "^2.1.1"
+  },
+  "dependencies": {
+    "bunyan": "^1.8.12",
+    "bunyan-format": "^0.2.1",
+    "docker-cli-js": "^2.2.0"
+  }
+}
