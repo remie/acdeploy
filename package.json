@@ -27,8 +27,14 @@
     "typings": "^2.1.1"
   },
   "dependencies": {
+    "aws-sdk": "^2.211.1",
     "bunyan": "^1.8.12",
     "bunyan-format": "^0.2.1",
-    "docker-cli-js": "^2.2.0"
+    "colors": "^1.2.1",
+    "docker-cli-js": "^2.2.0",
+    "exec": "^0.2.1",
+    "minimist": "^1.2.0",
+    "nconf": "^0.10.0",
+    "yamljs": "^0.3.0"
   }
 }
