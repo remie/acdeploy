@@ -166,7 +166,7 @@ export default class AWS {
       const services = describeServiceResponse.services.filter(service => service.serviceName === serviceDefinition.serviceName);
       let service = services.length === 1 ? services[0] : null;
 
-      if (service.status === 'INACTIVE') {
+      if (service && service.status === 'INACTIVE') {
         await this.ecs.deleteService({
           service: serviceDefinition.serviceName,
           cluster: clusterARN
