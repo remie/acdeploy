@@ -1,10 +1,5 @@
 {
     "compilerOptions": {
-        "typeRoots": [
-            "./node_modules/@types",
-            "./typings/gobals",
-            "./typings/modules"
-        ],
         "experimentalDecorators": true,
         "module": "commonjs",
         "target": "es6",
@@ -15,10 +10,9 @@
         "rootDir": "./src"
     },
     "includes": [
-        "src/**/*"
+        "src/**/*.ts"
     ],
     "exclude": [
-        "typings",
         "node_modules"
     ]
 }
