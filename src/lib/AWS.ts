@@ -185,6 +185,7 @@ export default class AWS {
       if (cluster) return cluster.clusterArn;
 
       // Create the Cluster
+      log.info(`ECS Cluster ${this.properties.options.aws.ecs.cluster.clusterName} does not yet exist, creating it!`);
       const createClustersResponse: ECS.CreateClusterResponse = await this.ecs.createCluster({ clusterName: this.properties.options.aws.ecs.cluster.clusterName }).promise();
       return createClustersResponse.cluster.clusterArn;
     } catch (error) {
