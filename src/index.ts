@@ -21,7 +21,7 @@ if (cli.args.help) {
   command.showHelp();
 } else {
   command.run(cli.args).catch((error) => {
-    console.error('Oh my, something went really wrong here. Please check the error message 👇');
+    log.error('Oh my, something went really wrong here. Please check the error message 👇');
     console.error(error);
     process.exit(-1);
   });
