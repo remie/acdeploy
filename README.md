@@ -16,7 +16,7 @@ ACDeploy automatically detects the programming language of your project and crea
 Step 1: install ACDeploy
 
 ```
-npm install -g acdeploy
+npm install -g @remie/acdeploy
 ```
 
 Step 2: Clone your project repository locally
