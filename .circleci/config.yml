@@ -26,7 +26,7 @@ jobs:
           command: |
             if [ "${CIRCLE_BRANCH}" == "master" ]; then
               echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > .npmrc
-              npm publish
+              npm publish --access public
             else
               echo "Only builds from 'master' branch are published on NPM"
             fi
