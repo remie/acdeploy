@@ -1,7 +1,6 @@
 {
-  "private": true,
-  "name": "acdeploy",
   "version": "0.0.1",
+  "name": "@remie/acdeploy",
   "description": "Automatic Container Deployment (acdeploy): keeping you cool while deploying",
   "bin": {
     "acdeploy": "./dist/index.js"
