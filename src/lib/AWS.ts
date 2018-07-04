@@ -148,7 +148,7 @@ export default class AWS {
 
       const serviceDefinition: ECS.CreateServiceRequest = this.options.ecs.service || {} as ECS.CreateServiceRequest;
       serviceDefinition.serviceName = serviceDefinition.serviceName || this.properties.options.name;
-      serviceDefinition.taskDefinition = serviceDefinition.taskDefinition || this.properties.options.name;
+      serviceDefinition.taskDefinition = serviceDefinition.taskDefinition || this.options.ecs.taskDefinition.family;
       serviceDefinition.cluster = serviceDefinition.cluster || clusterARN;
       serviceDefinition.desiredCount = serviceDefinition.desiredCount !== undefined ? serviceDefinition.desiredCount :  1;
       serviceDefinition.loadBalancers = serviceDefinition.loadBalancers && serviceDefinition.loadBalancers.length > 0 ? serviceDefinition.loadBalancers : [
