@@ -24,7 +24,7 @@ export default class DefaultCommand extends AbstractCommand {
       process.exit(-1);
     }
 
-    this.log.info(`Starting deployment of ${properties.options.name}`);
+    this.log.info(`Starting deployment of ${properties.options.name} 🤞`);
 
     // Check if acdeploy login was executed
     try {
@@ -43,7 +43,6 @@ export default class DefaultCommand extends AbstractCommand {
     const docker: Docker = new Docker(properties);
 
     // Start deployment of this project
-    this.log.info(`Starting deployment of ${properties.options.name} 🤞`);
     await docker.build();
     await docker.push();
     await aws.updateOrCreateService();
