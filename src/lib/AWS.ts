@@ -179,7 +179,15 @@ export default class AWS {
     try {
       const describeClustersResponse: ECS.DescribeClustersResponse = await this.ecs.describeClusters({ clusters: [ this.properties.options.aws.ecs.cluster.clusterName ] }).promise();
       const clusters = describeClustersResponse.clusters.filter(cluster => cluster.clusterName === this.properties.options.aws.ecs.cluster.clusterName);
-      const cluster = clusters.length === 1 ? clusters[0] : null;
+      let cluster = clusters.length === 1 ? clusters[0] : null;
+
+      // If the cluster is marked INACTIVE, delete it to avoid issues
+      if (cluster && cluster.status === 'INACTIVE') {
+        await this.ecs.deleteCluster({
+          cluster: this.properties.options.aws.ecs.cluster.clusterName
+        }).promise();
+        cluster = null;
+      }
 
       // Return the ARN if the cluster already exists
       if (cluster) return cluster.clusterArn;
