@@ -130,38 +130,7 @@ export default class Utils {
     // Set default AWS configuration
     options.aws = merge({}, {
       region: 'us-east-1',
-      profile: slugify(`acdeploy-${options.name}`, { lower: true, remove: /[$*_+~.,()'"!\-:@&]/g }),
-      ecs: {
-        cluster: {
-          clusterName: 'acdeploy'
-        },
-        service: {
-          desiredCount: 1,
-          serviceName: options.name,
-          taskDefinition: options.name
-        },
-        taskDefinition: {
-          family: options.name,
-          containerDefinitions: []
-        },
-        loadbalancer: {
-          Name: options.name
-        },
-        targetGroup: {
-          Name: options.name,
-          Protocol: 'HTTP',
-          Port: 80,
-        },
-        listener: {
-          DefaultActions: [
-            {
-              Type: 'forward'
-            }
-          ],
-          Port: 80,
-          Protocol: 'HTTP'
-        }
-      }
+      profile: slugify(`acdeploy-${options.name}`, { lower: true, remove: /[$*_+~.,()'"!\:@&]/g })
     }, options.aws);
 
     properties.options = options as ACDeployOptions;
