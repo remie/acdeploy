@@ -5,7 +5,7 @@
 import Utils from './Utils';
 import AWS from './AWS';
 import { ProjectProperties, DockerOptions, BuildPack } from '../Interfaces';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import { spawn } from 'child_process';
 
@@ -28,51 +28,51 @@ export default class Docker {
     this.verbose = properties.verbose;
     this.buildPack = properties.options.buildPack;
     this.options = properties.options.docker;
+    this.properties = properties;
   }
 
-  build(forDeployment: boolean = true): Promise<void> {
+  async build(forDeployment: boolean = true): Promise<void> {
     log.info('Creating Dockerfile. This file SHOULD NOT be committed to version control');
 
     // Write Dockerfile to disk
-    fs.writeFileSync(path.join(this.basedir, 'Dockerfile'), this.toDockerfile());
+    await fs.writeFile(path.join(this.basedir, 'Dockerfile'), this.toDockerfile());
 
     // Only write .dockerignore to disk when deploying
     // Some of the ignored local files will probably be needed when running `acdeploy --serve`
     if (forDeployment) {
-      fs.writeFileSync(path.join(this.basedir, '.dockerignore'), this.getDockerIgnore());
-    } else if (fs.existsSync(path.join(this.basedir, '.dockerignore'))) {
-      fs.unlinkSync(path.join(this.basedir, '.dockerignore'));
+      await fs.writeFile(path.join(this.basedir, '.dockerignore'), this.getDockerIgnore());
+    } else if (await fs.pathExists(path.join(this.basedir, '.dockerignore'))) {
+      await fs.unlink(path.join(this.basedir, '.dockerignore'));
     }
 
     // Build the docker file
     log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
-    return this.exec(['build', '-t', this.options.name, '.']);
+    await this.exec(['build', '-t', this.options.name, '.'], true);
   }
 
-  tag(name: string, tag: string = 'latest'): Promise<string> {
+  async tag(name: string, tag: string = 'latest'): Promise<string> {
     log.info(`Tagging Docker image '${this.options.name}:latest' as '${name}:${tag}' 💪`);
-    return this.exec(['tag', `${this.options.name}:latest`, `${name}:${tag}`]).then(() => Promise.resolve(`${name}:${tag}`));
+    await this.exec(['tag', `${this.options.name}:latest`, `${name}:${tag}`]);
+    return `${name}:${tag}`;
   }
 
-  push(): Promise<void> {
+  async push(): Promise<void> {
     log.info('Retrieving/creating Amazon Web Service ECR repository 🗄️');
     const aws = new AWS(this.properties);
-    return aws.getRepositoryURI(this.options.repository.name)
-      .then(repositoryUri => this.tag(repositoryUri))
-      .then(name => {
-        log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
-        return aws.getDockerLoginCommand()
-          .then(parameters => this.exec(parameters))
-          .then(() => {
-              log.info('Pushing docker image to for Amazon Web Service ECR repository 📦');
-              return this.exec(['push', name]);
-          });
-        });
+    const repositoryUri = await aws.getRepositoryURI(this.options.repository.name);
+    const name = await this.tag(repositoryUri);
+
+    log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
+    const parameters = await aws.getDockerLoginCommand();
+    await this.exec(parameters);
+
+    log.info('Pushing docker image to Amazon Web Service ECR repository 📦');
+    await this.exec(['push', name]);
   }
 
-  run(): Promise<void> {
+  async run(): Promise<void> {
     log.info(`Starting docker container ${this.options.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
-    return this.exec(['run', '--rm', '--name', this.options.name, '-p', '8000:80', '-p', '8443:443', this.options.name], true);
+    await this.exec(['run', '--rm', '--name', this.options.name, '-p', '8000:80', '-p', '8443:443', this.options.name], true);
   }
 
   private toDockerfile() {
@@ -100,7 +100,7 @@ Dockerfile
     return dockerIgnore;
   }
 
-  private exec(parameters: Array<string>, verbose: boolean = this.verbose): Promise<void> {
+  private async exec(parameters: Array<string>, verbose: boolean = this.verbose): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const docker = spawn('docker', parameters);
       if (verbose) {

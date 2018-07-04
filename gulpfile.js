@@ -44,3 +44,7 @@ gulp.task('assets', ['clean'], () =>
 );
 
 gulp.task('clean', () => del(['./dist/**/*']));
+
+gulp.task('watch', ['build'], () => {
+	gulp.watch(['./src/**/*', './typings/**/*'], ['build']);
+});

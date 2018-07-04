@@ -4,7 +4,7 @@
 
 import { Command, CommandLineArgs, ProjectProperties, SupportedCI, CI, YMLOptions, ACDeployOptions, ECSOptions } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
-import { DefaultCommand, InitCommand, ServeCommand, ClearCommand } from '../commands';
+import { DefaultCommand, InitCommand, LoginCommand, ServeCommand, ClearCommand } from '../commands';
 import { Travis } from '../ci';
 import CommandLine from './CommandLine';
 import * as fs from 'fs';
@@ -12,11 +12,11 @@ import * as path from 'path';
 import * as yamljs from 'yamljs';
 import * as bunyan from 'bunyan';
 import * as logFormatter from 'bunyan-format';
-import * as nconf from 'nconf';
+import * as merge from 'lodash.merge';
+import slugify from 'slugify';
 
 // ------------------------------------------------------------------------------------------ Variables
 
-nconf.argv().env();
 const basedir = process.cwd();
 const logger = bunyan.createLogger({
   name: 'acdeploy',
@@ -119,45 +119,50 @@ export default class Utils {
     }
 
     // Set default Docker configuration
-    if (!options.docker) {
-      options.docker = {
-        name: options.name,
-        repository: {
-          type: 'aws-ecr',
-          name: options.name
-        }
-      };
-    }
+    options.docker = merge({}, {
+      name: options.name,
+      repository: {
+        type: 'aws-ecr',
+        name: options.name
+      }
+    }, options.docker);
 
     // Set default AWS configuration
-    if (!options.aws) {
-      options.aws = {
-        region: 'us-east-1',
-        ecs: {
-          cluster: {
-            clusterName: 'acdeploy'
-          },
-          service: {
-            desiredCount: 1,
-            serviceName: options.name,
-            taskDefinition: options.name
-          },
-          taskDefinition: {
-            family: options.name,
-            containerDefinitions: []
-          },
-          loadbalancer: {
-            Name: options.name
-          },
-          targetGroup: {
-            Name: options.name,
-            Protocol: 'https',
-            Port: 443,
-            VpcId: null
-          }
+    options.aws = merge({}, {
+      region: 'us-east-1',
+      profile: slugify(`acdeploy-${options.name}`, { lower: true, remove: /[$*_+~.,()'"!\-:@&]/g }),
+      ecs: {
+        cluster: {
+          clusterName: 'acdeploy'
+        },
+        service: {
+          desiredCount: 1,
+          serviceName: options.name,
+          taskDefinition: options.name
+        },
+        taskDefinition: {
+          family: options.name,
+          containerDefinitions: []
+        },
+        loadbalancer: {
+          Name: options.name
+        },
+        targetGroup: {
+          Name: options.name,
+          Protocol: 'HTTP',
+          Port: 80,
+        },
+        listener: {
+          DefaultActions: [
+            {
+              Type: 'forward'
+            }
+          ],
+          Port: 80,
+          Protocol: 'HTTP'
         }
-      };
-    }
+      }
+    }, options.aws);
 
     properties.options = options as ACDeployOptions;
     return properties;
@@ -173,12 +178,13 @@ export default class Utils {
     switch (cli.commands[0]) {
       case 'init':
         return new InitCommand(cli);
+      case 'login':
+        return new LoginCommand(cli);
       case 'clear':
         return new ClearCommand(cli);
       case 'serve':
         return new ServeCommand(cli);
       default:
-        const log = Utils.getLogger();
         console.log(`Unrecognized command: '${cli.commands[0]}'`);
         Utils.showHelp();
     }
@@ -225,7 +231,7 @@ export default class Utils {
     matches.forEach(match => {
       // Remove the ${} from the match and retrieve the environment variable
       match = match.substr(2, match.length - 3 );
-      const value = nconf.get(match);
+      const value = process.env[match];
 
       // Make sure that the environment variable exists
       if (!value) {

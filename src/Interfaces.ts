@@ -55,15 +55,17 @@ export interface AWSOptions {
   accessKeyId?: string;
   secretAccessKey?: string;
   region: string;
+  profile: string;
   ecs: ECSOptions;
 }
 
 export interface ECSOptions {
-  cluster: AWS.ECS.CreateClusterRequest;
+  cluster: AWS.ECS.Cluster;
   service: AWS.ECS.CreateServiceRequest;
   taskDefinition: AWS.ECS.RegisterTaskDefinitionRequest;
   loadbalancer?: AWS.ELBv2.CreateLoadBalancerInput;
   targetGroup?: AWS.ELBv2.CreateTargetGroupInput;
+  listener?: AWS.ELBv2.CreateListenerInput;
 }
 
 export interface BuildPack {

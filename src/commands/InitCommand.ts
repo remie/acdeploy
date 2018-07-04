@@ -41,7 +41,7 @@ export default class InitCommand extends AbstractCommand {
   private commandHelp() {
     console.log('Supported options:');
     console.log('--name\tThe project name (will also be used as Docker image name)');
-    console.log('--ci\tThe CI tool used for build/deploy');
+    console.log('--ci\tThe CI tool used for build/deploy (optional, default value: "travis"');
     console.log();
     console.log('Currently supported values for --ci: \'travis\'');
   }

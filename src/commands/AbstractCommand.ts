@@ -20,7 +20,7 @@ export default abstract class AbstractCommand implements Command {
   validate(args: CommandLineArgs) {
     const missingArguments = this.requiredArguments.filter((arg: string) => !args[arg]);
     if (missingArguments.length > 0) {
-      console.log(`${missingArguments[0]} is a required parameter`);
+      this.log.error(`${missingArguments[0]} is a required parameter`);
       this.showHelp();
     }
   }

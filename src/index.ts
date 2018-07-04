@@ -3,6 +3,9 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
+import { load } from '@gdn/envify-nconf';
+load(process.cwd());
+
 import { Command } from './Interfaces';
 import { Utils, CommandLine } from './lib';
 
@@ -17,5 +20,9 @@ const command: Command = Utils.getCommand(cli);
 if (cli.args.help) {
   command.showHelp();
 } else {
-  command.run(cli.args);
+  command.run(cli.args).catch((error) => {
+    console.error('Oh my, something went really wrong here. Please check the error message 👇');
+    console.error(error);
+    process.exit(-1);
+  });
 }

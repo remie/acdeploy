@@ -43,6 +43,7 @@ before_install:
 - export AWS_ACCESS_KEY_ID=\${AWS_ACCESS_ID}
 - export AWS_SECRET_ACCESS_KEY=\${AWS_ACCESS_KEY}
 - npm install -g acdeploy
+- acdeploy login
 
 script:
 - acdeploy
