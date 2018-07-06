@@ -22,6 +22,8 @@ export default class Docker {
   private properties: ProjectProperties;
   private options: DockerOptions;
   private verbose: boolean;
+  private aws: AWS;
+
 
   constructor(properties: ProjectProperties) {
     this.basedir = properties.basedir;
@@ -29,25 +31,40 @@ export default class Docker {
     this.buildPack = properties.options.buildPack;
     this.options = properties.options.docker;
     this.properties = properties;
+    this.aws = new AWS(properties);
+  }
+
+  async login() {
+    const parameters = await this.aws.getDockerLoginCommand();
+    log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
+    await this.exec(parameters);
   }
 
   async build(forDeployment: boolean = true): Promise<void> {
-    log.info('Creating Dockerfile. This file SHOULD NOT be committed to version control');
+    log.info('Creating Dockerfile 🐳. This file SHOULD NOT be committed to version control ⛔');
 
     // Write Dockerfile to disk
     await fs.writeFile(path.join(this.basedir, 'Dockerfile'), this.toDockerfile());
 
     // Only write .dockerignore to disk when deploying
     // Some of the ignored local files will probably be needed when running `acdeploy --serve`
-    if (forDeployment) {
-      await fs.writeFile(path.join(this.basedir, '.dockerignore'), this.getDockerIgnore());
-    } else if (await fs.pathExists(path.join(this.basedir, '.dockerignore'))) {
-      await fs.unlink(path.join(this.basedir, '.dockerignore'));
-    }
+    await fs.writeFile(path.join(this.basedir, '.dockerignore'), this.getDockerIgnore());
+
+    const buildCmd = ['build'];
+    try {
+      const repositoryUri = await this.aws.getRepositoryURI(this.options.repository.name);
+      if (repositoryUri) {
+        log.info('Pulling existing Docker image to speed up the build 🏃💨');
+        await this.login();
+        await this.exec(['pull', repositoryUri]);
+        buildCmd.push('--cache-from');
+        buildCmd.push(repositoryUri);
+      }
+    } catch (error) {}
 
     // Build the docker file
     log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
-    await this.exec(['build', '-t', this.options.name, '.'], true);
+    await this.exec(buildCmd.concat(['-t', this.options.name, '.']), true);
   }
 
   async tag(name: string, tag: string = 'latest'): Promise<string> {
@@ -58,13 +75,9 @@ export default class Docker {
 
   async push(): Promise<void> {
     log.info('Retrieving/creating Amazon Web Service ECR repository 🗄️');
-    const aws = new AWS(this.properties);
-    const repositoryUri = await aws.getRepositoryURI(this.options.repository.name);
+    const repositoryUri = await this.aws.getRepositoryURI(this.options.repository.name);
     const name = await this.tag(repositoryUri);
-
-    log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
-    const parameters = await aws.getDockerLoginCommand();
-    await this.exec(parameters);
+    await this.login();
 
     log.info('Pushing docker image to Amazon Web Service ECR repository 📦');
     await this.exec(['push', name]);
@@ -92,8 +105,10 @@ ${this.buildPack.command}
 .acdeploy.yaml
 acdeploy.yml
 acdeploy.yaml
-Dockerfile
 .travis.yml
+.git
+.dockerignore
+Dockerfile
 `;
 
     dockerIgnore += this.buildPack.dockerignore;
