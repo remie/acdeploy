@@ -8,6 +8,7 @@ load(process.cwd());
 
 import { Command } from './Interfaces';
 import { Utils, CommandLine } from './lib';
+const pkg = require('../package.json');
 
 // ------------------------------------------------------------------------------------------ Variables
 
@@ -19,6 +20,8 @@ const command: Command = Utils.getCommand(cli);
 
 if (cli.args.help) {
   command.showHelp();
+} else if (cli.args.version) {
+  console.log(`ACDeploy version ${pkg.version}`);
 } else {
   command.run(cli.args).catch((error) => {
     log.error('Oh my, something went really wrong here. Please check the error message 👇');

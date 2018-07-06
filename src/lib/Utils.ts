@@ -183,6 +183,9 @@ export default class Utils {
         console.log('\tserve \t\t Run ACDeploy locally (Docker CE is required)');
         console.log('\tclear \t\t Remove ACDeploy configuration for current project');
         console.log();
+        console.log('Supported options:');
+        console.log('--version\tDisplays the current version of ACDeploy');
+        console.log();
         console.log('For detailed information on each command and its options, run:');
         console.log('\tacdeploy [command] --help');
     } else {
