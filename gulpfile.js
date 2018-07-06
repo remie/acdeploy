@@ -7,6 +7,7 @@ const gulp = require('gulp');
 const ts = require('gulp-typescript');
 const tslint = require('gulp-tslint');
 const sourcemaps = require('gulp-sourcemaps');
+const chmod = require('gulp-chmod');
 
 const tsProject = ts.createProject('./tsconfig.json');
 
@@ -45,6 +46,12 @@ gulp.task('assets', ['clean'], () =>
 
 gulp.task('clean', () => del(['./dist/**/*']));
 
-gulp.task('watch', ['build'], () => {
-	gulp.watch(['./src/**/*', './typings/**/*'], ['build']);
+gulp.task('executable', ['build'], () =>
+    gulp.src('dist/index.js')
+        .pipe(chmod(0o755))
+        .pipe(gulp.dest('dist'))
+);
+
+gulp.task('watch', ['executable'], () => {
+	gulp.watch(['./src/**/*', './typings/**/*'], ['executable']);
 });
