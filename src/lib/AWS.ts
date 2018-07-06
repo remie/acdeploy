@@ -105,7 +105,7 @@ export default class AWS {
       // Get the ARN for cluster and target group and add them to the service definition
       const clusterARN = await this.getClusterARN();
       const targetGroupARN = await this.getTargetGroupARN();
-      const serviceDefinition = merge({
+      const serviceDefinition: AWS.ECS.CreateServiceRequest = merge({
         cluster: clusterARN,
         loadBalancers: [
           {
@@ -132,14 +132,19 @@ export default class AWS {
       }
 
       if (!service) {
-        log.info(`Creating service ${serviceDefinition.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${serviceDefinition.taskDefinition}`);
+        log.info(`Creating service ${serviceDefinition.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${serviceDefinition.taskDefinition} 🚀`);
         await this.ecs.createService(serviceDefinition).promise();
       } else {
-        log.info(`Forcing redeployment to service ${serviceDefinition.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${serviceDefinition.taskDefinition}`);
+        log.info(`Forcing redeployment to service ${serviceDefinition.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${serviceDefinition.taskDefinition} 🚀`);
         await this.ecs.updateService({
-          service: serviceDefinition.serviceName,
-          taskDefinition: serviceDefinition.taskDefinition,
           cluster: serviceDefinition.cluster,
+          service: serviceDefinition.serviceName,
+          desiredCount: serviceDefinition.desiredCount,
+          taskDefinition: serviceDefinition.taskDefinition,
+          deploymentConfiguration: serviceDefinition.deploymentConfiguration,
+          networkConfiguration: serviceDefinition.networkConfiguration,
+          platformVersion: serviceDefinition.platformVersion,
+          healthCheckGracePeriodSeconds: serviceDefinition.healthCheckGracePeriodSeconds,
           forceNewDeployment: true
         }).promise();
       }
@@ -167,7 +172,7 @@ export default class AWS {
           ]
         }, this.properties.options.aws.ecs.listener);
 
-        log.info(`Adding listener to loadbalancer ${loadBalancerARN} for target group ${targetGroupARN}`);
+        log.info(`Adding listener to loadbalancer ${loadBalancerARN} for target group ${targetGroupARN} 👂`);
         await this.elb.createListener(listenerDefinition).promise();
       }
     } catch (error) {
