@@ -32,7 +32,7 @@ export class LoginCommand extends AbstractCommand {
         when: (answers) => {
           if (!args.aws_access_key_id  && !config[profile].aws_access_key_id && !process.env.AWS_ACCESS_KEY_ID) return true;
           if (config[profile].aws_access_key_id) answers.aws_access_key_id = config[profile].aws_access_key_id;
-          if (process.env.AWS_SECRET_ACCESS_KEY) answers.aws_access_key_id = process.env.AWS_SECRET_ACCESS_KEY;
+          if (process.env.AWS_ACCESS_KEY_ID) answers.aws_access_key_id = process.env.AWS_ACCESS_KEY_ID;
           if (args.aws_access_key_id) answers.aws_access_key_id = args.aws_access_key_id;
           return false;
         }
