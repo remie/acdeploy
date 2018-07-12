@@ -38,7 +38,14 @@ RUN apt-get update; \
   git \
   curl \
   wget \
-  unzip; \
+  unzip \
+  libbz2-dev \
+  libcurl4-openssl-dev \
+  libpq-dev \
+  libedit-dev \
+  zlib1g-dev \
+  libpng-dev \
+  libjpeg-dev; \
   wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg; \
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list; \
   apt-get update;\
@@ -47,7 +54,8 @@ RUN apt-get update; \
   php -r "if (hash_file('SHA384', 'composer-setup.php') === '55d6ead61b29c7bdee5cccfb50076874187bd9f21f65d8991d46ec5cc90518f447387fb9f76ebae1fbbacf329e583e30') { echo 'Installer verified'; } else { echo 'Installer corrupt'; exit 100; } echo PHP_EOL;"; \
   php composer-setup.php --install-dir=/usr/bin --filename=composer; \
   php -r "unlink('composer-setup.php');"; \
-  a2enmod rewrite;
+  a2enmod rewrite; \
+  docker-php-ext-install bz2 curl mbstring pdo_mysql mysqli opcache pdo_pgsql readline sockets zip gd;
 
 COPY . /var/www/html/
 RUN composer install --no-plugins --no-scripts --working-dir /var/www/html/;
@@ -62,12 +70,6 @@ RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -; \
         }
 
         return dockerfile;
-  }
-
-  get dockerignore() {
-    return `
-.env
-`;
   }
 
   toString(): string {
