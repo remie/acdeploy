@@ -454,7 +454,7 @@ export class AWS {
               ]
             },
             targetGroup: {
-              VpcId: properties.options.aws.vpcId,
+              VpcId: properties.options.aws ? properties.options.aws.vpcId : null,
               Name: properties.options.name,
               Protocol: 'HTTP',
               Port: 80,
