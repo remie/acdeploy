@@ -2,23 +2,27 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { Command, CommandLineArgs, ProjectProperties, SupportedCI, CI, YMLOptions, ACDeployOptions, ECSOptions } from '../Interfaces';
+import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
-import { DefaultCommand, InitCommand, LoginCommand, ServeCommand, ClearCommand } from '../commands';
-import { Travis } from '../ci';
-import CommandLine from './CommandLine';
-import * as fs from 'fs';
+import { DefaultCommand } from '../commands/DefaultCommand';
+import { InitCommand } from '../commands/InitCommand';
+import { LoginCommand } from '../commands/LoginCommand';
+import { ApplyCommand } from '../commands/ApplyCommand';
+import { ServeCommand } from '../commands/ServeCommand';
+import { ClearCommand } from '../commands/ClearCommand';
+import { Travis } from '../ci/Travis';
+import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as yamljs from 'yamljs';
 import * as bunyan from 'bunyan';
 import * as logFormatter from 'bunyan-format';
 import * as merge from 'lodash.merge';
 import slugify from 'slugify';
+import * as minimist from 'minimist';
 
 // ------------------------------------------------------------------------------------------ Variables
 
-const basedir = process.cwd();
-const logger = bunyan.createLogger({
+const log = bunyan.createLogger({
   name: 'acdeploy',
   stream: logFormatter({ outputMode: 'short' }),
   level: 'info'
@@ -26,151 +30,137 @@ const logger = bunyan.createLogger({
 
 // ------------------------------------------------------------------------------------------ Class
 
-export default class Utils {
+export class Utils {
+
+  private static _properties;
 
   static getLogger() {
-    return logger;
+    return log;
   }
 
-  static getProjectProperties(args: CommandLineArgs): ProjectProperties {
+  static getArgs(): CommandLineArgs {
+    return Object.assign({}, minimist(process.argv.slice(2)));
+  }
 
-    // Initialize properties
-    const log = Utils.getLogger();
-    const properties: ProjectProperties = {} as any;
-    let options: YMLOptions = {} as YMLOptions;
+  static get properties(): ProjectProperties {
+    if (!Utils._properties) {
+      const args = minimist(process.argv.slice(2));
 
-    // Properties from Command-line parameters
-    properties.basedir = process.cwd();
-    properties.verbose = (typeof args.verbose === 'boolean') ? args.verbose : false;
+      // Initialize properties
+      const properties: ProjectProperties = {
+        basedir: process.cwd(),
+        verbose: args.verbose,
+        ymlFile: '.acdeploy.yml',
+      };
 
-    // Loop over files in basedir to check if we can detect the type of project
-    let ymlFile: string;
-    const files = fs.readdirSync(properties.basedir);
+      // Loop over files in basedir to check if we can detect the type of project
+      const files = fs.readdirSync(properties.basedir);
+      files.forEach(file => {
+        switch (file) {
+          case '.acdeploy':
+            properties.ymlFile = '.acdeploy/config.yml';
+            break;
+          case '.acdeploy.yml':
+          case '.acdeploy.yaml':
+          case 'acdeploy.yml':
+          case 'acdeploy.yaml':
+            properties.ymlFile = file;
+            break;
+        }
+      });
 
-    files.forEach(file => {
-      switch (file) {
-        case 'pom.xml':
-          properties.isMaven = true;
-          break;
-        case 'composer.json':
-          properties.isPHP = true;
-          break;
-        case 'bower.json':
-          properties.isBower = true;
-          break;
-        case 'package.json':
-          properties.isNodeJS = true;
-          break;
-        case 'Dockerfile':
-          properties.isDockerized = true;
-          break;
-        case '.acdeploy':
-          properties.ymlFile = '.acdeploy/config.yml';
-          break;
-        case '.acdeploy.yml':
-        case '.acdeploy.yaml':
-        case 'acdeploy.yml':
-        case 'acdeploy.yaml':
-          properties.ymlFile = file;
-          break;
+      // If we happen to have found custom settings, read them :)
+      if (properties.ymlFile && fs.pathExistsSync(properties.ymlFile)) {
+        const buffer = fs.readFileSync(properties.ymlFile);
+        const content = this.replaceEnvironmentVariables(buffer.toString('utf-8'));
+        properties.options = yamljs.parse(content);
+      } else {
+        properties.options = {} as ACDeployOptions;
       }
-    });
 
-    // If we happen to have found custom settings, read them :)
-    if (properties.ymlFile) {
-      const buffer = fs.readFileSync(properties.ymlFile);
-      const content = this.replaceEnvironmentVariables(buffer.toString('utf-8'));
-      options = yamljs.parse(content) as YMLOptions;
-    } else {
-      options = {} as YMLOptions;
-      properties.ymlFile = path.join(properties.basedir, '.acdeploy.yml');
-    }
-
-    // Check for required options on the command-line if not already present
-    if (!options.name && typeof args.name === 'string') {
-      options.name = args.name;
-    }
-
-    // Fail if we can't find minimal required options
-    if (!options.name) {
-      log.info(`Could not find required option 'name'. Are you sure this project has been initialized?`);
-      log.info(`If not, you should run 'acdeploy init --name <project_name>' first`);
-      process.exit(-1);
-    }
-
-    // Determine BuildPack based on project configuration
-    if (!options.buildPack) {
-      if (properties.isMaven) {
-        options.buildPack = new MavenBuildPack(properties);
-      } else if (properties.isPHP) {
-        options.buildPack = new PHPBuildPack(properties);
-      } else if (properties.isNodeJS) {
-        options.buildPack = new NodeJSBuildPack(properties);
+      // Determine BuildPack based on project configuration
+      let buildPack: string = (typeof properties.options.buildPack === 'string') ? properties.options.buildPack : undefined;
+      if (!buildPack) {
+        files.forEach(file => {
+          switch (file) {
+            case 'pom.xml':
+              buildPack = MavenBuildPack.toString();
+              break;
+            case 'composer.json':
+              buildPack = PHPBuildPack.toString();
+              break;
+            case 'package.json':
+              buildPack = NodeJSBuildPack.toString();
+              break;
+          }
+        });
       }
-    } else if (typeof options.buildPack === 'string') {
-      switch (options.buildPack) {
+
+      Utils._properties = properties;
+    }
+
+    if (Utils._properties.options.buildPack) {
+      const files = fs.readdirSync(Utils._properties.basedir);
+      switch (Utils._properties.options.buildPack) {
+        case MavenBuildPack.toString():
+          Utils._properties.options.buildPack = new MavenBuildPack();
+          break;
         case PHPBuildPack.toString():
-          options.buildPack = new PHPBuildPack(properties);
+          const useBower = files.indexOf('bower.json') >= 0;
+          Utils._properties.options.buildPack = new PHPBuildPack(useBower);
           break;
-        default:
-          log.error(`Oh nooo! You have specified a buildPack (${options.buildPack}) in your acdeploy config file which is currently not supported`);
-          process.exit(-1);
+        case NodeJSBuildPack.toString():
+          Utils._properties.options.buildPack = new NodeJSBuildPack();
+          break;
       }
     }
 
-    // Set default Docker configuration
-    options.docker = merge({}, {
-      name: options.name,
-      repository: {
-        type: 'aws-ecr',
-        name: options.name
-      }
-    }, options.docker);
-
-    // Set default AWS configuration
-    options.aws = merge({}, {
-      region: 'us-east-1',
-      profile: slugify(`acdeploy-${options.name}`, { lower: true, remove: /[$*_+~.,()'"!\:@&]/g })
-    }, options.aws);
-
-    properties.options = options as ACDeployOptions;
-    return properties;
+    return Utils._properties;
   }
 
-  static getCommand(cli: CommandLine): Command {
+  static set properties(value: ProjectProperties) {
+    Utils._properties = value;
+  }
+
+  static getCommand(): Command {
+    const args = minimist(process.argv.slice(2));
+    const commands = args._.slice();
+
     // Return default command if none is specified
-    if (!cli.commands || cli.commands.length === 0) {
-      return new DefaultCommand(cli);
+    if (!commands || commands.length === 0) {
+      return new DefaultCommand();
     }
 
     // Return specified command (or show help if not supported)
-    switch (cli.commands[0]) {
+    switch (commands[0]) {
       case 'init':
-        return new InitCommand(cli);
+        return new InitCommand();
       case 'login':
-        return new LoginCommand(cli);
+        return new LoginCommand();
+      case 'apply':
+        return new ApplyCommand();
       case 'clear':
-        return new ClearCommand(cli);
+        return new ClearCommand();
       case 'serve':
-        return new ServeCommand(cli);
+        return new ServeCommand();
       default:
-        console.log(`Unrecognized command: '${cli.commands[0]}'`);
+        console.log(`Unrecognized command: '${commands[0]}'`);
         Utils.showHelp();
     }
   }
 
-  static getCI(name: SupportedCI): CI {
-    switch (name) {
+  static getCI(): CI {
+    switch (Utils.properties.options.ci.toLowerCase()) {
       case 'travis':
       default:
-        return new Travis(Utils.getLogger());
+        return new Travis();
     }
   }
 
   static toYAML(properties: ProjectProperties) {
-    fs.writeFileSync(properties.ymlFile, yamljs.stringify(Object.assign(properties.options, {
-      buildPack: properties.options.buildPack.toString()
-    }), 10));
+    const options: any = Object.assign({}, properties.options);
+    if (options.buildPack) options.buildPack = options.buildPack.toString();
+    fs.writeFileSync(properties.ymlFile, yamljs.stringify(options, 10));
   }
 
   static showHelp(command: string = '[command]', commandHelp?: Function) {
@@ -180,6 +170,8 @@ export default class Utils {
     if (!commandHelp) {
         console.log('Supported commands:');
         console.log('\tinit \t\t Enable ACDeploy for current project');
+        console.log('\tlogin \t\t Set ACDeploy AWS credentials for current project');
+        console.log('\tapply \t\t Provision required ACDeploy resources on AWS for current project');
         console.log('\tserve \t\t Run ACDeploy locally (Docker CE is required)');
         console.log('\tclear \t\t Remove ACDeploy configuration for current project');
         console.log();

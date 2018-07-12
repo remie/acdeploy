@@ -3,17 +3,18 @@
 // ------------------------------------------------------------------------------------------ Dependencies
 
 import { ProjectProperties, CI } from '../Interfaces';
+import { Utils } from '../lib/Utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
 // ------------------------------------------------------------------------------------------ Class
 
-export default class Travis implements CI {
+export class Travis implements CI {
 
   private log;
 
-  constructor(logger) {
-    this.log = logger;
+  constructor() {
+    this.log = Utils.getLogger();
   }
 
   create() {

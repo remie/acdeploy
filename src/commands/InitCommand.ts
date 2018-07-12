@@ -1,29 +1,20 @@
 'use strict';
 
-import AbstractCommand from './AbstractCommand';
-import DefaultCommand from './DefaultCommand';
-import { ProjectProperties, CommandLineArgs } from '../Interfaces';
-import { Utils } from '../lib';
+import { AbstractCommand } from './AbstractCommand';
+import { ProjectProperties } from '../Interfaces';
+import { Utils } from '../lib/Utils';
+import { AWS } from '../lib/AWS';
+import * as inquirer from 'inquirer';
 
-export default class InitCommand extends AbstractCommand {
+export class InitCommand extends AbstractCommand {
 
-  protected get requiredArguments(): Array<string> {
-    return ['name'];
-  }
-
-  run(args: CommandLineArgs): Promise<void> {
+  async run(): Promise<void> {
 
     // Check for required parameters & turn them into properties
-    this.validate(args);
-    const properties = Utils.getProjectProperties(args);
-
-    // Save the name to the properties
-    properties.options.name = (typeof args.name === 'string') ? args.name : null;
-    properties.options.ci = (typeof args.ci === 'string') ? args.ci : 'Travis';
+    const properties = await this.getProperties();
 
     // Generate CI config file
-    const CI = Utils.getCI(properties.options.ci);
-    CI.create();
+    Utils.getCI().create();
 
     // Generate YML file
     Utils.toYAML(properties);
@@ -34,16 +25,26 @@ export default class InitCommand extends AbstractCommand {
     return Promise.resolve();
   }
 
-  showHelp() {
-    Utils.showHelp('init', this.commandHelp);
+  protected async questions(defaults: ProjectProperties): Promise<inquirer.Questions> {
+    return [
+      {
+        type: 'input',
+        name: 'options.name',
+        message: `Pick a name for your application`,
+        when: (answers) => !defaults.options.name,
+      },
+      {
+        type: 'list',
+        name: 'options.ci',
+        message: `Pick your Continuous Integration server`,
+        choices: [ 'Travis' ],
+        when: (answers) => !defaults.options.ci,
+      }
+    ];
   }
 
-  private commandHelp() {
-    console.log('Supported options:');
-    console.log('--name\tThe project name (will also be used as Docker image name)');
-    console.log('--ci\tThe CI tool used for build/deploy (optional, default value: "travis"');
-    console.log();
-    console.log('Currently supported values for --ci: \'travis\'');
+  showHelp() {
+    Utils.showHelp('init', () => {});
   }
 
 }

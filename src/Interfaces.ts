@@ -15,22 +15,9 @@ export type CommandLineArgs = {
 
 export interface ProjectProperties {
   basedir: string;
-  isPHP: boolean;
-  isNodeJS: boolean;
-  isMaven: boolean;
-  isDockerized: boolean;
-  isBower: boolean;
-  options: ACDeployOptions;
-  ymlFile: string;
   verbose: boolean;
-}
-
-export interface YMLOptions {
-  name: string;
-  ci: SupportedCI;
-  buildPack: string|BuildPack;
-  docker: DockerOptions;
-  aws: AWSOptions;
+  ymlFile: string;
+  options?: ACDeployOptions;
 }
 
 export interface ACDeployOptions {
@@ -52,11 +39,11 @@ export interface DockerRepositoryOptions {
 }
 
 export interface AWSOptions {
-  accessKeyId?: string;
-  secretAccessKey?: string;
   region: string;
   profile: string;
+  vpcId: string;
   ecs: ECSOptions;
+  ecr: AWS.ECR.CreateRepositoryRequest;
 }
 
 export interface ECSOptions {
@@ -66,6 +53,11 @@ export interface ECSOptions {
   loadbalancer?: AWS.ELBv2.CreateLoadBalancerInput;
   targetGroup?: AWS.ELBv2.CreateTargetGroupInput;
   listener?: AWS.ELBv2.CreateListenerInput;
+}
+
+export interface AWSCredentials {
+  aws_access_key_id?: string;
+  aws_secret_access_key?: string;
 }
 
 export interface BuildPack {

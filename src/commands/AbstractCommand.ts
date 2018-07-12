@@ -1,30 +1,33 @@
 'use strict';
 
-import { Utils, CommandLine } from '../lib';
+import { Utils } from '../lib/Utils';
 import { Command, ProjectProperties, CommandLineArgs } from '../interfaces';
 import * as bunyan from 'bunyan';
+import * as inquirer from 'inquirer';
+import * as merge from 'lodash.merge';
 
-export default abstract class AbstractCommand implements Command {
+export abstract class AbstractCommand implements Command {
 
-  protected cli: CommandLine;
   protected log: bunyan;
 
-  constructor(cli: CommandLine) {
-    this.cli = cli;
+  constructor() {
     this.log = Utils.getLogger();
   }
 
-  abstract run(args: CommandLineArgs): Promise<void>;
-  abstract showHelp();
+  abstract async run(): Promise<void>;
 
-  validate(args: CommandLineArgs) {
-    const missingArguments = this.requiredArguments.filter((arg: string) => !args[arg]);
-    if (missingArguments.length > 0) {
-      this.log.error(`${missingArguments[0]} is a required parameter`);
-      this.showHelp();
-    }
+  protected async getProperties(): Promise<ProjectProperties> {
+    const answers = await inquirer.prompt(await this.questions(Utils.properties));
+    Utils.properties = merge(Utils.properties, answers);
+    return Utils.properties;
   }
 
-  protected abstract get requiredArguments(): Array<string>;
+  protected async questions(defaults: ProjectProperties): Promise<inquirer.Questions> {
+    return [];
+  }
+
+  showHelp() {
+    Utils.showHelp();
+  }
 
 }

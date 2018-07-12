@@ -9,6 +9,13 @@ import AbstractBuildPack from './AbstractBuildPack';
 
 export default class PHP extends AbstractBuildPack {
 
+  private useBower: boolean = false;
+
+  constructor(useBower: boolean = false) {
+    super();
+    this.useBower = useBower;
+  }
+
   get image() {
     return 'php';
   }
@@ -45,7 +52,7 @@ RUN apt-get update; \
 COPY . /var/www/html/
 RUN composer install --no-plugins --no-scripts --working-dir /var/www/html/;
 `;
-        if (this.properties.isBower) {
+        if (this.useBower) {
           dockerfile += `
 RUN curl -sL https://deb.nodesource.com/setup_8.x | bash -; \
     apt-get install -y nodejs; \

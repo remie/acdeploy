@@ -3,27 +3,25 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { load } from '@gdn/envify-nconf';
-load(process.cwd());
-
-import { Command } from './Interfaces';
-import { Utils, CommandLine } from './lib';
-const pkg = require('../package.json');
+require('@gdn/envify-nconf').load(process.cwd());
+import { Command, CommandLineArgs } from './Interfaces';
+import { Utils } from './lib/Utils';
 
 // ------------------------------------------------------------------------------------------ Variables
 
 const log = Utils.getLogger();
-const cli: CommandLine = new CommandLine();
-const command: Command = Utils.getCommand(cli);
+const command: Command = Utils.getCommand();
+const args: CommandLineArgs = Utils.getArgs();
 
 // ------------------------------------------------------------------------------------------ Main applications
 
-if (cli.args.help) {
+if (args.help) {
   command.showHelp();
-} else if (cli.args.version) {
+} else if (args.version) {
+  const pkg = require('../package.json');
   console.log(`ACDeploy version ${pkg.version}`);
 } else {
-  command.run(cli.args).catch((error) => {
+  command.run(args).catch((error) => {
     log.error('Oh my, something went really wrong here. Please check the error message 👇');
     console.error(error);
     process.exit(-1);

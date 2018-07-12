@@ -1,36 +1,34 @@
 'use strict';
 
-import * as fs from 'fs';
+import { AbstractCommand } from './AbstractCommand';
+import { ProjectProperties } from '../Interfaces';
+import { Utils } from '../lib/Utils';
+import * as fs from 'fs-extra';
 import * as path from 'path';
-import AbstractCommand from './AbstractCommand';
-import DefaultCommand from './DefaultCommand';
-import { ProjectProperties, CommandLineArgs } from '../Interfaces';
-import { Utils } from '../lib';
 
-export default class ClearCommand extends AbstractCommand {
+export class ClearCommand extends AbstractCommand {
 
-  protected get requiredArguments(): Array<string> {
-    return [];
-  }
-
-  run(args: CommandLineArgs): Promise<void> {
+  async run(): Promise<void> {
 
     // Check for required parameters & turn them into properties
-    this.validate(args);
-    const properties = Utils.getProjectProperties(args);
+    const properties = await this.getProperties();
 
     // Remove the CI config file
-    const CI = Utils.getCI(properties.options.ci);
-    CI.delete();
+    Utils.getCI().delete();
 
     // Remove YML file
     if (properties.ymlFile) {
-      fs.unlinkSync(properties.ymlFile);
+      await fs.unlink(properties.ymlFile);
     }
 
     // Remove Dockerfile
-    if (fs.existsSync(path.join(process.cwd(), 'Dockerfile'))) {
-      fs.unlinkSync(path.join(process.cwd(), 'Dockerfile'));
+    if (await fs.exists(path.join(properties.basedir, 'Dockerfile'))) {
+      await fs.unlink(path.join(properties.basedir, 'Dockerfile'));
+    }
+
+    // Remove Dockerignore
+    if (await fs.exists(path.join(properties.basedir, '.dockerignore'))) {
+      await fs.unlink(path.join(properties.basedir, '.dockerignore'));
     }
 
     // Inform the user of our progress

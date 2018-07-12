@@ -1,22 +1,18 @@
 'use strict';
 
+import { AbstractCommand } from './AbstractCommand';
+import { Utils } from '../lib/Utils';
+import { Docker } from '../lib/Docker';
+import { AWS } from '../lib/AWS';
 import * as fs from 'fs-extra';
 import * as ini from 'ini';
-import AbstractCommand from './AbstractCommand';
-import { CommandLineArgs } from '../Interfaces';
-import { Utils, AWS, Docker } from '../lib';
 
-export default class DefaultCommand extends AbstractCommand {
+export class DefaultCommand extends AbstractCommand {
 
-  protected get requiredArguments(): Array<string> {
-    return [];
-  }
-
-  async run(args: CommandLineArgs): Promise<void> {
+  async run(): Promise<void> {
 
     // Check for required parameters & turn them into properties
-    this.validate(args);
-    const properties = Utils.getProjectProperties(args);
+    const properties = await this.getProperties();
 
     // Make sure that we have all required options available
     if (!properties.options.name) {
@@ -32,20 +28,19 @@ export default class DefaultCommand extends AbstractCommand {
       const credentialsFileAvailable = await fs.pathExists(credentialsFilePath);
       if (!credentialsFileAvailable) throw new Error('AWS credentials file not found');
       const credentials = ini.parse(await fs.readFile(credentialsFilePath, 'utf-8'));
-      if (!credentials[properties.options.aws.profile]) throw new Error('AWS credentials missing');
+      const profile = properties.options.aws && properties.options.aws.profile ? properties.options.aws.profile : properties.options.name;
+      if (!credentials[profile]) throw new Error('AWS credentials missing');
     } catch (error) {
+      console.log(error);
       this.log.warn('It looks like ACDeploy has not yet been authorized to deploy this application. Please run `acdeploy login` first');
       process.exit(-1);
     }
 
-    // Initialize AWS & Docker
-    const aws: AWS = new AWS(properties);
-    const docker: Docker = new Docker(properties);
-
     // Start deployment of this project
+    const docker: Docker = new Docker();
     await docker.build();
     await docker.push();
-    await aws.updateOrCreateService();
+    await new AWS().deploy();
     this.log.info(`Successfully deployed ${properties.options.name} 🏆`);
   }
 

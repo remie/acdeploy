@@ -18,6 +18,7 @@
   "author": "Remie Bolte <r.bolte@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/inquirer": "0.0.42",
     "@types/node": "^9.4.7",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
@@ -35,6 +36,7 @@
     "bunyan-format": "^0.2.1",
     "fs-extra": "^6.0.1",
     "ini": "^1.3.5",
+    "inquirer": "^6.0.0",
     "lodash.merge": "^4.6.1",
     "minimist": "^1.2.0",
     "slugify": "^1.3.0",

@@ -2,59 +2,57 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import Utils from './Utils';
-import AWS from './AWS';
 import { ProjectProperties, DockerOptions, BuildPack } from '../Interfaces';
+import { Utils } from './Utils';
+import { AWS } from './AWS';
 import * as fs from 'fs-extra';
 import * as path from 'path';
+import * as bunyan from 'bunyan';
+import * as merge from 'lodash.merge';
 import { spawn } from 'child_process';
-
-// ------------------------------------------------------------------------------------------ Variables
-
-const log = Utils.getLogger();
 
 // ------------------------------------------------------------------------------------------ Class
 
-export default class Docker {
+export class Docker {
 
-  private basedir: string;
-  private buildPack: BuildPack;
-  private properties: ProjectProperties;
-  private options: DockerOptions;
-  private verbose: boolean;
   private aws: AWS;
+  private log: bunyan;
 
+  constructor() {
+    // Set the default Docker properties
+    Utils.properties = merge(Utils.properties, {
+      options: {
+        docker: {
+          name: Utils.properties.options.name
+        }
+      }
+    });
 
-  constructor(properties: ProjectProperties) {
-    this.basedir = properties.basedir;
-    this.verbose = properties.verbose;
-    this.buildPack = properties.options.buildPack;
-    this.options = properties.options.docker;
-    this.properties = properties;
-    this.aws = new AWS(properties);
+    this.log = Utils.getLogger();
+    this.aws = new AWS();
   }
 
   async login() {
     const parameters = await this.aws.getDockerLoginCommand();
-    log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
+    this.log.info('Retrieving docker credentials for Amazon Web Service ECR repository 🔐');
     await this.exec(parameters);
   }
 
   async build(forDeployment: boolean = true): Promise<void> {
-    log.info('Creating Dockerfile 🐳. This file SHOULD NOT be committed to version control ⛔');
+    this.log.info('Creating Dockerfile 🐳. This file SHOULD NOT be committed to version control ⛔');
 
     // Write Dockerfile to disk
-    await fs.writeFile(path.join(this.basedir, 'Dockerfile'), this.toDockerfile());
+    await fs.writeFile(path.join(Utils.properties.basedir, 'Dockerfile'), this.toDockerfile());
 
     // Only write .dockerignore to disk when deploying
     // Some of the ignored local files will probably be needed when running `acdeploy --serve`
-    await fs.writeFile(path.join(this.basedir, '.dockerignore'), this.getDockerIgnore());
+    await fs.writeFile(path.join(Utils.properties.basedir, '.dockerignore'), this.getDockerIgnore());
 
     const buildCmd = ['build'];
     try {
-      const repositoryUri = await this.aws.getRepositoryURI(this.options.repository.name);
+      const repositoryUri = await this.aws.getRepositoryURI();
       if (repositoryUri) {
-        log.info('Pulling existing Docker image to speed up the build 🏃💨');
+        this.log.info('Pulling existing Docker image to speed up the build 🏃💨');
         await this.login();
         await this.exec(['pull', repositoryUri]);
         buildCmd.push('--cache-from');
@@ -63,38 +61,47 @@ export default class Docker {
     } catch (error) {}
 
     // Build the docker file
-    log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
-    await this.exec(buildCmd.concat(['-t', this.options.name, '.']), true);
+    this.log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
+    await this.exec(buildCmd.concat(['-t', Utils.properties.options.docker.name, '.']), true);
   }
 
   async tag(name: string, tag: string = 'latest'): Promise<string> {
-    log.info(`Tagging Docker image '${this.options.name}:latest' as '${name}:${tag}' 💪`);
-    await this.exec(['tag', `${this.options.name}:latest`, `${name}:${tag}`]);
+    this.log.info(`Tagging Docker image '${Utils.properties.options.docker.name}:latest' as '${name}:${tag}' 💪`);
+    await this.exec(['tag', `${Utils.properties.options.docker.name}:latest`, `${name}:${tag}`]);
     return `${name}:${tag}`;
   }
 
   async push(): Promise<void> {
-    log.info('Retrieving/creating Amazon Web Service ECR repository 🗄️');
-    const repositoryUri = await this.aws.getRepositoryURI(this.options.repository.name);
-    const name = await this.tag(repositoryUri);
-    await this.login();
+    try {
+      this.log.info('Retrieving/creating Amazon Web Service ECR repository 🗄️');
+      const repositoryUri = await this.aws.getRepositoryURI();
+      const name = await this.tag(repositoryUri);
+      await this.login();
 
-    log.info('Pushing docker image to Amazon Web Service ECR repository 📦');
-    await this.exec(['push', name]);
+      this.log.info('Pushing docker image to Amazon Web Service ECR repository 📦');
+      await this.exec(['push', name]);
+    } catch (error) {
+      if (error.message === 'Repository does not exist') {
+        this.log.warn('It looks like AWS has not yet been provisioned for this application. Please run `acdeploy apply` first');
+        process.exit(-1);
+      } else {
+        throw error;
+      }
+    }
   }
 
   async run(): Promise<void> {
-    log.info(`Starting docker container ${this.options.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
-    await this.exec(['run', '--rm', '--name', this.options.name, '-p', '8000:80', '-p', '8443:443', this.options.name], true);
+    this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
+    await this.exec(['run', '--rm', '--name', Utils.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443', Utils.properties.options.docker.name], true);
   }
 
   private toDockerfile() {
     return `
-FROM ${this.buildPack.image}:${this.buildPack.tag}
+FROM ${Utils.properties.options.buildPack.image}:${Utils.properties.options.buildPack.tag}
 
-${this.buildPack.body}
+${Utils.properties.options.buildPack.body}
 
-${this.buildPack.command}
+${Utils.properties.options.buildPack.command}
 `.trim();
   }
 
@@ -111,11 +118,11 @@ acdeploy.yaml
 Dockerfile
 `;
 
-    dockerIgnore += this.buildPack.dockerignore;
+    dockerIgnore += Utils.properties.options.buildPack.dockerignore;
     return dockerIgnore;
   }
 
-  private async exec(parameters: Array<string>, verbose: boolean = this.verbose): Promise<void> {
+  private async exec(parameters: Array<string>, verbose: boolean = Utils.properties.verbose): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const docker = spawn('docker', parameters);
       if (verbose) {

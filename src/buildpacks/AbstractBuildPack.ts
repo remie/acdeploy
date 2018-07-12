@@ -8,12 +8,6 @@ import { ProjectProperties, BuildPack } from '../Interfaces';
 
 export default abstract class AbstractBuildPack implements BuildPack {
 
-  protected properties: ProjectProperties;
-
-  constructor(properties: ProjectProperties) {
-    this.properties = properties;
-  }
-
   abstract get image();
 
   get tag() {
