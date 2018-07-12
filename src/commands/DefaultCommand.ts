@@ -36,16 +36,50 @@ export class DefaultCommand extends AbstractCommand {
       process.exit(-1);
     }
 
+    const suffix = await this.getSuffix();
+
     // Start deployment of this project
-    const docker: Docker = new Docker();
+    const docker: Docker = new Docker(suffix);
     await docker.build();
     await docker.push();
-    await new AWS().deploy();
+    await new AWS(suffix).deploy();
     this.log.info(`Successfully deployed ${properties.options.name} 🏆`);
   }
 
   showHelp() {
     Utils.showHelp();
+  }
+
+  private async getSuffix(): Promise<string> {
+    const properties = await this.getProperties();
+
+    let branch: string;
+    switch (properties.options.ci.toLowerCase()) {
+      case 'travis':
+        if (process.env.TRAVIS_PULL_REQUEST_BRANCH !== '') {
+          branch = process.env.TRAVIS_PULL_REQUEST_BRANCH;
+        } else {
+          branch = process.env.TRAVIS_BRANCH;
+        }
+        break;
+    }
+
+    let test: string|RegExp;
+    return ['development', 'staging', 'production'].reduce((value, env) => {
+      if (properties.options.environments[env].enabled && this.isEnvironmentBranch(branch, properties.options.environments[env].branch)) {
+        return properties.options.environments[env].suffix;
+      } else {
+        return value;
+      }
+    }, undefined);
+  }
+
+  private isEnvironmentBranch(current: string, required: string|RegExp): boolean {
+    if (typeof required === 'string') {
+      return current === required;
+    } else {
+      return required.test(current);
+    }
   }
 
 }

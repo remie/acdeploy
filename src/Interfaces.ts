@@ -24,8 +24,23 @@ export interface ACDeployOptions {
   name: string;
   ci: SupportedCI;
   buildPack: BuildPack;
+  environments: Environments;
   docker: DockerOptions;
   aws: AWSOptions;
+}
+
+export interface Environments {
+  development?: EnvironmentOptions;
+  staging?: EnvironmentOptions;
+  production?: EnvironmentOptions;
+}
+
+export interface EnvironmentOptions {
+  enabled: boolean;
+  suffix: string;
+  branch?: string|RegExp;
+  docker?: DockerOptions;
+  aws?: AWSOptions;
 }
 
 export interface DockerOptions {

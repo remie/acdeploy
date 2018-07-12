@@ -72,7 +72,9 @@ export class Utils {
       // If we happen to have found custom settings, read them :)
       if (properties.ymlFile && fs.pathExistsSync(properties.ymlFile)) {
         const buffer = fs.readFileSync(properties.ymlFile);
-        const content = this.replaceEnvironmentVariables(buffer.toString('utf-8'));
+        const content = (Utils.getCommandName() === 'default')
+          ? Utils.replaceEnvironmentVariables(buffer.toString('utf-8'))
+          : buffer.toString('utf-8');
         properties.options = yamljs.parse(content);
       } else {
         properties.options = {} as ACDeployOptions;
@@ -124,17 +126,25 @@ export class Utils {
     Utils._properties = value;
   }
 
-  static getCommand(): Command {
+  static getCommandName(): string {
     const args = minimist(process.argv.slice(2));
     const commands = args._.slice();
 
     // Return default command if none is specified
     if (!commands || commands.length === 0) {
-      return new DefaultCommand();
+      return 'default';
+    } else {
+      return commands[0];
     }
+  }
+
+  static getCommand(): Command {
+    const command = Utils.getCommandName();
 
     // Return specified command (or show help if not supported)
-    switch (commands[0]) {
+    switch (command) {
+      case 'default':
+        return new DefaultCommand();
       case 'init':
         return new InitCommand();
       case 'login':
@@ -146,7 +156,7 @@ export class Utils {
       case 'serve':
         return new ServeCommand();
       default:
-        console.log(`Unrecognized command: '${commands[0]}'`);
+        console.log(`Unrecognized command: '${command}'`);
         Utils.showHelp();
     }
   }

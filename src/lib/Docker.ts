@@ -18,18 +18,24 @@ export class Docker {
   private aws: AWS;
   private log: bunyan;
 
-  constructor() {
+  constructor(suffix?: string) {
+    if (suffix) {
+      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+    } else {
+      suffix = '';
+    }
+
     // Set the default Docker properties
     Utils.properties = merge(Utils.properties, {
       options: {
         docker: {
-          name: Utils.properties.options.name
+          name: Utils.properties.options.name + suffix
         }
       }
     });
 
     this.log = Utils.getLogger();
-    this.aws = new AWS();
+    this.aws = new AWS(suffix);
   }
 
   async login() {

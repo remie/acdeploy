@@ -20,8 +20,8 @@ export class AWS {
   private properties: ProjectProperties;
   private log: bunyan = Utils.getLogger();
 
-  constructor() {
-    this.properties = this.getDefaultProperties(Utils.properties);
+  constructor(suffix?: string) {
+    this.properties = this.getDefaultProperties(Utils.properties, suffix);
     const credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
 
     this.ec2 = new EC2({
@@ -423,7 +423,14 @@ export class AWS {
     }
   }
 
-  private getDefaultProperties(properties: ProjectProperties) {
+  private getDefaultProperties(properties: ProjectProperties, suffix?: string) {
+
+    if (suffix) {
+      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+    } else {
+      suffix = '';
+    }
+
     const defaults = merge({
       options: {
         aws: {
@@ -474,7 +481,7 @@ export class AWS {
                   logConfiguration: {
                     logDriver: 'awslogs',
                     options: {
-                      'awslogs-region': 'us-east-1',
+                      'awslogs-region': properties.options.aws.region ? properties.options.aws.region : 'us-east-1',
                       'awslogs-group': properties.options.name
                     }
                   },
@@ -484,7 +491,47 @@ export class AWS {
           }
         }
       }
-    }, properties);
+    }, properties, {
+      options: {
+        aws: {
+          ecr: {
+            repositoryName: properties.options.name + suffix
+          },
+          ecs: {
+            cluster: {
+              clusterName: properties.options.name + suffix
+            },
+            loadbalancer: {
+              Name: properties.options.name + suffix
+            },
+            service: {
+              serviceName: properties.options.name + suffix,
+              loadBalancers: [
+                {
+                  containerName: properties.options.name + suffix,
+                }
+              ]
+            },
+            targetGroup: {
+              Name: properties.options.name + suffix,
+            },
+            taskDefinition: {
+              family: properties.options.name + suffix,
+              containerDefinitions: [
+                {
+                  name: properties.options.name + suffix,
+                  logConfiguration: {
+                    options: {
+                      'awslogs-group': properties.options.name + suffix
+                    }
+                  },
+                }
+              ]
+            }
+          }
+        }
+      }
+    });
 
     defaults.options.aws.ecs.service.taskDefinition = defaults.options.aws.ecs.service.taskDefinition || defaults.options.aws.ecs.taskDefinition.family;
     defaults.options.aws.ecs.service.loadBalancers.forEach((loadBalancer) => loadBalancer.containerName = defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].name);
