@@ -93,13 +93,15 @@ export class Utils {
               buildPack = NodeJSBuildPack.toString();
               break;
           }
+          // @ts-ignore because we are using a string instead of the required BuildPack interface
+          properties.options.buildPack = buildPack;
         });
       }
 
       Utils._properties = properties;
     }
 
-    if (Utils._properties.options.buildPack) {
+    if (typeof Utils._properties.options.buildPack === 'string') {
       const files = fs.readdirSync(Utils._properties.basedir);
       switch (Utils._properties.options.buildPack) {
         case MavenBuildPack.toString():
