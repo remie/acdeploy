@@ -29,8 +29,10 @@ export class LoginCommand extends AbstractCommand {
         name: 'aws_access_key_id',
         message: `AWS Access Key ID`,
         when: (answers) => {
-          if (!args.aws_access_key_id  && !config[profile].aws_access_key_id) return true;
-          answers.aws_access_key_id = args.aws_access_key_id || config[profile].aws_access_key_id;
+          if (!args.aws_access_key_id  && !config[profile].aws_access_key_id && !process.env.AWS_ACCESS_KEY_ID) return true;
+          if (config[profile].aws_access_key_id) answers.aws_access_key_id = config[profile].aws_access_key_id;
+          if (process.env.AWS_SECRET_ACCESS_KEY) answers.aws_access_key_id = process.env.AWS_SECRET_ACCESS_KEY;
+          if (args.aws_access_key_id) answers.aws_access_key_id = args.aws_access_key_id;
           return false;
         }
       },
@@ -39,8 +41,10 @@ export class LoginCommand extends AbstractCommand {
         name: 'aws_secret_access_key',
         message: `AWS Secret Access Key`,
         when: (answers) => {
-          if (!args.aws_secret_access_key && !config[profile].aws_secret_access_key) return true;
-          answers.aws_secret_access_key = args.aws_secret_access_key || config[profile].aws_secret_access_key;
+          if (!args.aws_secret_access_key && !config[profile].aws_secret_access_key && !process.env.AWS_SECRET_ACCESS_KEY) return true;
+          if (config[profile].aws_secret_access_key) answers.aws_secret_access_key = config[profile].aws_secret_access_key;
+          if (process.env.AWS_SECRET_ACCESS_KEY) answers.aws_secret_access_key = process.env.AWS_SECRET_ACCESS_KEY;
+          if (args.aws_secret_access_key) answers.aws_secret_access_key = args.aws_secret_access_key;
           return false;
         }
       }
