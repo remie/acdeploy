@@ -22,6 +22,7 @@ export class LoginCommand extends AbstractCommand {
     const config = await this.getCredentials();
     const properties = Utils.properties;
     const profile = properties.options.aws && properties.options.aws.profile ? properties.options.aws.profile : properties.options.name;
+    config[profile] = config[profile] || {};
 
     return [
       {
