@@ -65,13 +65,13 @@ export class DefaultCommand extends AbstractCommand {
     }
 
     let test: string|RegExp;
-    return ['development', 'staging', 'production'].reduce((value, env) => {
-      if (properties.options.environments[env].enabled && this.isEnvironmentBranch(branch, properties.options.environments[env].branch)) {
-        return properties.options.environments[env].suffix;
+    return ['development', 'staging', 'production'].reduce((previous, next) => {
+      if (properties.options.environments[next].enabled && this.isEnvironmentBranch(branch, properties.options.environments[next].branch)) {
+        return properties.options.environments[next].suffix;
       } else {
-        return value;
+        return previous;
       }
-    }, undefined);
+    });
   }
 
   private isEnvironmentBranch(current: string, required: string|RegExp): boolean {
