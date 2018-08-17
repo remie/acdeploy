@@ -62,6 +62,7 @@ export class AWS {
   }
 
   async apply(): Promise<void> {
+    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options);
     await this.createRepository();
     await this.createCluster();
     await this.createLoadbalancer();

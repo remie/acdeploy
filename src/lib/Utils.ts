@@ -72,10 +72,7 @@ export class Utils {
       // If we happen to have found custom settings, read them :)
       if (properties.ymlFile && fs.pathExistsSync(properties.ymlFile)) {
         const buffer = fs.readFileSync(properties.ymlFile);
-        const content = (Utils.getCommandName() === 'default')
-          ? Utils.replaceEnvironmentVariables(buffer.toString('utf-8'))
-          : buffer.toString('utf-8');
-        properties.options = yamljs.parse(content);
+        properties.options = yamljs.parse(buffer.toString('utf-8'));
       } else {
         properties.options = {} as ACDeployOptions;
       }
@@ -200,7 +197,25 @@ export class Utils {
     process.exit();
   }
 
-  private static replaceEnvironmentVariables(content: string): string {
+  static replaceEnvironmentVariables(options: ACDeployOptions): ACDeployOptions {
+    return Utils.replaceEnvironmentVariablesRecursively(options);
+  }
+
+  private static replaceEnvironmentVariablesRecursively(options: any): any {
+    if (typeof options === 'string') {
+      options = Utils.replaceEnvironmentVariable(options);
+    } else if (options instanceof Array) {
+      options = options.map((item: any) => Utils.replaceEnvironmentVariablesRecursively(item));
+    } else if (typeof options === 'object' && Object.keys(options).length > 0) {
+      Object.keys(options).forEach((key) => {
+        options[key] = Utils.replaceEnvironmentVariablesRecursively(options[key]);
+      });
+    }
+
+    return options;
+  }
+
+  private static replaceEnvironmentVariable(content: string) {
     // Replace environment variables
     const missing = [];
     const matches = content.match(/\$\{.*\}/gi) || [];
