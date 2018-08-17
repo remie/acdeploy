@@ -20,7 +20,7 @@ export class Docker {
 
   constructor(environment?: EnvironmentOptions) {
     let suffix = environment && environment.suffix ? environment.suffix : '';
-    suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+    suffix = (suffix === '' || suffix.startsWith('-')) ? suffix : '-' + suffix;
 
     // Set the default Docker properties
     Utils.properties = merge(Utils.properties, {
