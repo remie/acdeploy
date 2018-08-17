@@ -1,5 +1,6 @@
 'use strict';
 
+import { EnvironmentOptions } from '../Interfaces';
 import { AbstractCommand } from './AbstractCommand';
 import { Utils } from '../lib/Utils';
 import { Docker } from '../lib/Docker';
@@ -36,13 +37,12 @@ export class DefaultCommand extends AbstractCommand {
       process.exit(-1);
     }
 
-    const suffix = await this.getSuffix();
-
     // Start deployment of this project
-    const docker: Docker = new Docker(suffix);
+    const environment = await this.getEnvironment();
+    const docker: Docker = new Docker(environment);
     await docker.build();
     await docker.push();
-    await new AWS(suffix).deploy();
+    await new AWS(environment).deploy();
     this.log.info(`Successfully deployed ${properties.options.name} 🏆`);
   }
 
@@ -50,7 +50,7 @@ export class DefaultCommand extends AbstractCommand {
     Utils.showHelp();
   }
 
-  private async getSuffix(): Promise<string> {
+  private async getEnvironment(): Promise<EnvironmentOptions> {
     const properties = await this.getProperties();
 
     let branch: string;
@@ -65,11 +65,12 @@ export class DefaultCommand extends AbstractCommand {
     }
 
     let test: string|RegExp;
-    return ['development', 'staging', 'production'].reduce((previous, next) => {
-      if (properties.options.environments[next].enabled && this.isEnvironmentBranch(branch, properties.options.environments[next].branch)) {
-        return properties.options.environments[next].suffix;
+    const environments: Array<EnvironmentOptions> = Object.keys(properties.options.environments).map((name: string) => properties.options.environments[name]);
+    return environments.reduce((selected: EnvironmentOptions, environment: EnvironmentOptions) => {
+      if (environment.enabled && this.isEnvironmentBranch(branch, environment.branch)) {
+        return environment;
       } else {
-        return previous;
+        return selected;
       }
     });
   }

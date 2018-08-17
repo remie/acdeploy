@@ -2,9 +2,9 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, AWSOptions } from '../Interfaces';
+import { ProjectProperties, AWSOptions, EnvironmentOptions } from '../Interfaces';
 import { Utils } from './Utils';
-import { EC2, ECR, ECS, ELBv2, CloudWatchLogs, SharedIniFileCredentials } from 'aws-sdk';
+import { STS, EC2, ECR, ECS, ELBv2, CloudWatchLogs, SharedIniFileCredentials } from 'aws-sdk';
 import * as merge from 'lodash.merge';
 import * as bunyan from 'bunyan';
 
@@ -12,6 +12,7 @@ import * as bunyan from 'bunyan';
 
 export class AWS {
 
+  private sts: STS;
   private ec2: EC2;
   private ecr: ECR;
   private ecs: ECS;
@@ -20,8 +21,8 @@ export class AWS {
   private properties: ProjectProperties;
   private log: bunyan = Utils.getLogger();
 
-  constructor(suffix?: string) {
-    this.properties = this.getDefaultProperties(Utils.properties, suffix);
+  constructor(environment?: EnvironmentOptions) {
+    this.properties = this.getDefaultProperties(Utils.properties, environment);
     const credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
 
     this.ec2 = new EC2({
@@ -423,15 +424,11 @@ export class AWS {
     }
   }
 
-  private getDefaultProperties(properties: ProjectProperties, suffix?: string) {
+  private getDefaultProperties(properties: ProjectProperties, environment?: EnvironmentOptions) {
 
-    if (suffix) {
-      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
-    } else {
-      suffix = '';
-    }
+    const env: AWSOptions = environment ? environment.aws || <AWSOptions>{} : <AWSOptions>{};
 
-    const defaults = merge({
+    let defaults = merge({
       options: {
         aws: {
           region: 'us-east-1',
@@ -493,45 +490,56 @@ export class AWS {
       }
     }, properties, {
       options: {
-        aws: {
-          ecr: {
-            repositoryName: properties.options.name + suffix
-          },
-          ecs: {
-            cluster: {
-              clusterName: properties.options.name + suffix
+        aws: env
+      }
+    });
+
+    if (environment && environment.suffix) {
+      let suffix = environment.suffix;
+      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+
+      defaults = merge(defaults, {
+        options: {
+          aws: {
+            ecr: {
+              repositoryName: defaults.options.aws.ecr.repositoryName + suffix
             },
-            loadbalancer: {
-              Name: properties.options.name + suffix
-            },
-            service: {
-              serviceName: properties.options.name + suffix,
-              loadBalancers: [
-                {
-                  containerName: properties.options.name + suffix,
-                }
-              ]
-            },
-            targetGroup: {
-              Name: properties.options.name + suffix,
-            },
-            taskDefinition: {
-              family: properties.options.name + suffix,
-              containerDefinitions: [
-                {
-                  name: properties.options.name + suffix,
-                  logConfiguration: {
-                    options: {
-                      'awslogs-group': properties.options.name + suffix
-                    }
-                  },
-                }
-              ]
+            ecs: {
+              cluster: {
+                clusterName: defaults.options.aws.ecs.cluster.clusterName + suffix
+              },
+              loadbalancer: {
+                Name: defaults.options.aws.ecs.loadbalancer.Name + suffix
+              },
+              service: {
+                serviceName: defaults.options.aws.ecs.service.serviceName + suffix,
+                loadBalancers: [
+                  {
+                    containerName: defaults.options.aws.ecs.service.loadBalancers[0].containerName + suffix,
+                  }
+                ]
+              },
+              targetGroup: {
+                Name: defaults.options.aws.ecs.targetGroup.Name + suffix,
+              },
+              taskDefinition: {
+                family: defaults.options.aws.ecs.taskDefinition.family + suffix,
+                containerDefinitions: [
+                  {
+                    name: defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].name + suffix,
+                    logConfiguration: {
+                      options: {
+                        'awslogs-group': defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].logConfiguration.options['awslogs-group'] + suffix
+                      }
+                    },
+                  }
+                ]
+              }
             }
           }
         }
-      }
-    });
+      });
+    }
 
     defaults.options.aws.ecs.service.taskDefinition = defaults.options.aws.ecs.service.taskDefinition || defaults.options.aws.ecs.taskDefinition.family;
     defaults.options.aws.ecs.service.loadBalancers.forEach((loadBalancer) => loadBalancer.containerName = defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].name);

@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, DockerOptions, BuildPack } from '../Interfaces';
+import { ProjectProperties, DockerOptions, BuildPack, EnvironmentOptions } from '../Interfaces';
 import { Utils } from './Utils';
 import { AWS } from './AWS';
 import * as fs from 'fs-extra';
@@ -18,12 +18,9 @@ export class Docker {
   private aws: AWS;
   private log: bunyan;
 
-  constructor(suffix?: string) {
-    if (suffix) {
-      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
-    } else {
-      suffix = '';
-    }
+  constructor(environment?: EnvironmentOptions) {
+    let suffix = environment && environment.suffix ? environment.suffix : '';
+    suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
 
     // Set the default Docker properties
     Utils.properties = merge(Utils.properties, {
@@ -35,7 +32,7 @@ export class Docker {
     });
 
     this.log = Utils.getLogger();
-    this.aws = new AWS(suffix);
+    this.aws = new AWS(environment);
   }
 
   async login() {
