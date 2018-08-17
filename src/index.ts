@@ -21,7 +21,9 @@ if (args.help) {
   const pkg = require('../package.json');
   console.log(`ACDeploy version ${pkg.version}`);
 } else {
-  command.run(args).catch((error) => {
+  command.run(args).then(() => {
+    process.exit();
+  }).catch((error) => {
     log.error('Oh my, something went really wrong here. Please check the error message 👇');
     console.error(error);
     process.exit(-1);
