@@ -22,7 +22,7 @@ export interface ProjectProperties {
 
 export interface ACDeployOptions {
   name: string;
-  ci: SupportedCI;
+  ci: CIOptions;
   buildPack: BuildPack;
   environments: Environments;
   docker: DockerOptions;
@@ -41,6 +41,11 @@ export interface EnvironmentOptions {
   branch?: string|RegExp;
   docker?: DockerOptions;
   aws?: AWSOptions;
+}
+
+export interface CIOptions {
+  name: SupportedCI;
+  commands?: any;
 }
 
 export interface DockerOptions {

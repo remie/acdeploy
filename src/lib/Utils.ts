@@ -97,6 +97,13 @@ export class Utils {
         });
       }
 
+      // Migrate to CIOptions
+      if (typeof properties.options.ci === 'string') {
+        properties.options.ci = {
+          name: properties.options.ci
+        }
+      }
+
       Utils._properties = properties;
     }
 
@@ -159,10 +166,10 @@ export class Utils {
   }
 
   static getCI(): CI {
-    switch (Utils.properties.options.ci.toLowerCase()) {
+    switch (Utils.properties.options.ci.name.toLowerCase()) {
       case 'travis':
       default:
-        return new Travis();
+        return new Travis(Utils.properties.options.ci.commands);
     }
   }
 

@@ -32,7 +32,7 @@ export class InitCommand extends AbstractCommand {
 
     // Inform the user of our progress
     this.log.info(`ACDeploy is now enabled for ${properties.options.name}`);
-    this.log.info(`I've added config files for ACDeploy and ${properties.options.ci} to your project. You SHOULD commit these files to source control.`);
+    this.log.info(`I've added config files for ACDeploy and ${properties.options.ci.name} to your project. You SHOULD commit these files to source control.`);
     return Promise.resolve();
   }
 
@@ -46,7 +46,7 @@ export class InitCommand extends AbstractCommand {
       },
       {
         type: 'list',
-        name: 'options.ci',
+        name: 'options.ci.name',
         message: `Pick your Continuous Integration server`,
         choices: [ 'Travis' ],
         when: (answers) => !defaults.options.ci,

@@ -54,7 +54,7 @@ export class DefaultCommand extends AbstractCommand {
     const properties = await this.getProperties();
 
     let branch: string;
-    switch (properties.options.ci.toLowerCase()) {
+    switch (properties.options.ci.name.toLowerCase()) {
       case 'travis':
         if (process.env.TRAVIS_PULL_REQUEST_BRANCH !== '') {
           branch = process.env.TRAVIS_PULL_REQUEST_BRANCH;

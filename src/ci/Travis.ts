@@ -6,15 +6,18 @@ import { ProjectProperties, CI } from '../Interfaces';
 import { Utils } from '../lib/Utils';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as yamljs from 'yamljs';
 
 // ------------------------------------------------------------------------------------------ Class
 
 export class Travis implements CI {
 
   private log;
+  private commands: any;
 
-  constructor() {
+  constructor(commands?: any) {
     this.log = Utils.getLogger();
+    this.commands = commands || {};
   }
 
   create() {
@@ -30,6 +33,9 @@ export class Travis implements CI {
   }
 
   private get yml(): string {
+
+    const custom: string = yamljs.stringify(this.commands, 10);
+
   return `
 sudo: required
 language: node_js
@@ -46,8 +52,11 @@ before_install:
 - npm install -g @remie/acdeploy
 - acdeploy login
 
-script:
-- acdeploy
+${custom}
+
+deploy:
+- provider: script
+  script: acdeploy
 `;
   }
 
