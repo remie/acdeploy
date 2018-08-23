@@ -18,7 +18,16 @@ export default class NodeJS extends AbstractBuildPack {
   }
 
   get body() {
-    return '';
+    return `
+
+WORKDIR /opt
+COPY ./package.json package.json
+COPY ./package-lock.json package-lock.json
+RUN npm install
+
+COPY . ./
+RUN npm run postinstall
+    `;
   }
 
   get command() {
