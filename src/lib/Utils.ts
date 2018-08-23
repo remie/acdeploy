@@ -101,7 +101,7 @@ export class Utils {
       if (typeof properties.options.ci === 'string') {
         properties.options.ci = {
           name: properties.options.ci
-        }
+        };
       }
 
       if (properties.options.aws && properties.options.aws.ecs && properties.options.aws.ecs.taskDefinition && properties.options.aws.ecs.taskDefinition.containerDefinitions) {
