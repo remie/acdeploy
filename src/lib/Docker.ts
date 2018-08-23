@@ -95,7 +95,25 @@ export class Docker {
 
   async run(): Promise<void> {
     this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
-    await this.exec(['run', '--rm', '--name', Utils.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443', Utils.properties.options.docker.name], true);
+
+    const env = [];
+    const options = Utils.replaceEnvironmentVariables(Utils.properties.options);
+    if (options.aws &&
+      options.aws.ecs &&
+      options.aws.ecs.taskDefinition &&
+      options.aws.ecs.taskDefinition.containerDefinitions &&
+      options.aws.ecs.taskDefinition.containerDefinitions[0] &&
+      options.aws.ecs.taskDefinition.containerDefinitions[0].environment) {
+      env.push(...options.aws.ecs.taskDefinition.containerDefinitions[0].environment);
+    }
+
+    const args = ['run', '--rm', '--name', Utils.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443'];
+    env.forEach((entry) => {
+      args.push(...['-e', `${entry.name}=${entry.value}`]);
+    });
+    args.push(Utils.properties.options.docker.name);
+
+    await this.exec(args, true);
   }
 
   private toDockerfile() {
