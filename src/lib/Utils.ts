@@ -104,6 +104,18 @@ export class Utils {
         }
       }
 
+      if (properties.options.aws && properties.options.aws.ecs && properties.options.aws.ecs.taskDefinition && properties.options.aws.ecs.taskDefinition.containerDefinitions) {
+        properties.options.aws.ecs.taskDefinition.containerDefinitions = properties.options.aws.ecs.taskDefinition.containerDefinitions.map((item) => {
+          item.environment = item.environment.map((entry) => {
+            if (!entry.value) {
+              entry.value = `\$\{${entry.name}\}`;
+            }
+            return entry;
+          });
+          return item;
+        });
+      }
+
       Utils._properties = properties;
     }
 
