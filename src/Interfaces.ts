@@ -30,9 +30,7 @@ export interface ACDeployOptions {
 }
 
 export interface Environments {
-  development?: EnvironmentOptions;
-  staging?: EnvironmentOptions;
-  production?: EnvironmentOptions;
+  [key: string]: EnvironmentOptions;
 }
 
 export interface EnvironmentOptions {

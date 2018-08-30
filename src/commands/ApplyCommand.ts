@@ -14,19 +14,16 @@ export class ApplyCommand extends AbstractCommand {
     Utils.toYAML(properties);
 
     this.log.info(`Creating Amazon Web Services infrastructure for ${properties.options.name} 🤞`);
-    if (properties.options.environments) {
-      if (properties.options.environments.development && properties.options.environments.development.enabled) {
-        this.log.info(`Provisioning development environment...`);
-        await new AWS(properties.options.environments.development).apply();
-      }
-      if (properties.options.environments.staging && properties.options.environments.staging.enabled) {
-        this.log.info(`Provisioning staging environment...`);
-        await new AWS(properties.options.environments.staging).apply();
-      }
-      if (properties.options.environments.production && properties.options.environments.production.enabled) {
-        this.log.info(`Provisioning production environment...`);
-        await new AWS(properties.options.environments.production).apply();
-      }
+    if (properties.options.environments && Object.keys(properties.options.environments).length > 0) {
+      await Object.keys(properties.options.environments).reduce((previousTask, name) => {
+        return previousTask.then(async () => {
+          const environment = properties.options.environments[name];
+          if (environment.enabled) {
+            this.log.info(`Provisioning ${name} environment...`);
+            await new AWS(environment).apply();
+          }
+        });
+      }, Promise.resolve());
     } else {
       await new AWS().apply();
     }
