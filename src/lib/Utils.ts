@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions } from '../Interfaces';
+import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
 import { DefaultCommand } from '../commands/DefaultCommand';
 import { InitCommand } from '../commands/InitCommand';
@@ -104,17 +104,28 @@ export class Utils {
         };
       }
 
-      if (properties.options.aws && properties.options.aws.ecs && properties.options.aws.ecs.taskDefinition && properties.options.aws.ecs.taskDefinition.containerDefinitions) {
-        properties.options.aws.ecs.taskDefinition.containerDefinitions = properties.options.aws.ecs.taskDefinition.containerDefinitions.map((item) => {
-          item.environment = item.environment.map((entry) => {
-            if (!entry.value) {
-              entry.value = `\$\{${entry.name}\}`;
-            }
-            return entry;
-          });
-          return item;
+      // Set environment variables value from name attribute (if not set)
+      const aws = [];
+      aws.push(properties.options.aws);
+      if (properties.options.environments && Object.keys(properties.options.environments).length > 0) {
+        Object.keys(properties.options.environments).forEach((name) => {
+          aws.push(properties.options.environments[name].aws);
         });
       }
+
+      aws.forEach((aws: AWSOptions) => {
+        if (aws.ecs && aws.ecs.taskDefinition && aws.ecs.taskDefinition.containerDefinitions) {
+          aws.ecs.taskDefinition.containerDefinitions = aws.ecs.taskDefinition.containerDefinitions.map((item) => {
+            item.environment = item.environment.map((entry) => {
+              if (!entry.value) {
+                entry.value = `\$\{${entry.name}\}`;
+              }
+              return entry;
+            });
+            return item;
+          });
+        }
+      });
 
       Utils._properties = properties;
     }
@@ -227,7 +238,10 @@ export class Utils {
       options = options.map((item: any) => Utils.replaceEnvironmentVariablesRecursively(item));
     } else if (typeof options === 'object' && Object.keys(options).length > 0) {
       Object.keys(options).forEach((key) => {
-        options[key] = Utils.replaceEnvironmentVariablesRecursively(options[key]);
+        // Do not replace environment variables in CI section
+        if (key !== 'ci') {
+          options[key] = Utils.replaceEnvironmentVariablesRecursively(options[key]);
+        }
       });
     }
 
