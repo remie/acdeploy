@@ -57,6 +57,8 @@ ${custom}
 deploy:
 - provider: script
   script: acdeploy
+  on:
+    all_branches: true
 `;
   }
 
