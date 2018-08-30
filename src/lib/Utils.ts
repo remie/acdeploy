@@ -192,7 +192,7 @@ export class Utils {
     switch (Utils.properties.options.ci.name.toLowerCase()) {
       case 'travis':
       default:
-        return new Travis(Utils.properties.options.ci.commands);
+        return new Travis(Utils.properties.options.ci.jobs);
     }
   }
 
