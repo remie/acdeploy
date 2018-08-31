@@ -25,7 +25,7 @@ export class AWS {
     this.properties = this.getDefaultProperties(Utils.properties, environment);
 
     // Also support credentials provided in the YML file
-    let credentials: Credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile})
+    let credentials: Credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
     if (this.properties.options.aws.accessKeyId) {
       credentials = new Credentials({
         accessKeyId: this.properties.options.aws.accessKeyId,
