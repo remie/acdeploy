@@ -59,6 +59,8 @@ export interface DockerRepositoryOptions {
 export interface AWSOptions {
   region: string;
   profile: string;
+  accessKeyId?: string;
+  secretAccessKey?: string;
   vpcId: string;
   ecs: ECSOptions;
   ecr: AWS.ECR.CreateRepositoryRequest;

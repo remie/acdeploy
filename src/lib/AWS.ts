@@ -4,7 +4,7 @@
 
 import { ProjectProperties, AWSOptions, EnvironmentOptions } from '../Interfaces';
 import { Utils } from './Utils';
-import { STS, EC2, ECR, ECS, ELBv2, CloudWatchLogs, SharedIniFileCredentials } from 'aws-sdk';
+import { STS, EC2, ECR, ECS, ELBv2, CloudWatchLogs, Credentials, SharedIniFileCredentials } from 'aws-sdk';
 import * as merge from 'lodash.merge';
 import * as bunyan from 'bunyan';
 
@@ -23,16 +23,24 @@ export class AWS {
 
   constructor(environment?: EnvironmentOptions) {
     this.properties = this.getDefaultProperties(Utils.properties, environment);
-    const credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
+
+    // Also support credentials provided in the YML file
+    let credentials: Credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile})
+    if (this.properties.options.aws.accessKeyId) {
+      credentials = new Credentials({
+        accessKeyId: this.properties.options.aws.accessKeyId,
+        secretAccessKey: this.properties.options.aws.secretAccessKey
+      });
+    }
 
     this.ec2 = new EC2({
       credentials: credentials,
-      region: this.properties.options.aws.region,
+      region: this.properties.options.aws.region
     });
 
     this.ecr = new ECR({
       credentials: credentials,
-      region: this.properties.options.aws.region,
+      region: this.properties.options.aws.region
     });
 
     this.ecs = new ECS({
