@@ -67,7 +67,7 @@ export interface AWSOptions {
 }
 
 export interface ECSOptions {
-  cluster: AWS.ECS.Cluster;
+  cluster: AWS.ECS.CreateClusterRequest;
   service: AWS.ECS.CreateServiceRequest;
   taskDefinition: AWS.ECS.RegisterTaskDefinitionRequest;
   loadbalancer?: AWS.ELBv2.CreateLoadBalancerInput;

@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, AWSOptions, EnvironmentOptions } from '../Interfaces';
+import { ProjectProperties, AWSOptions, EnvironmentOptions, ECSOptions } from '../Interfaces';
 import { Utils } from './Utils';
 import { STS, EC2, ECR, ECS, ELBv2, CloudWatchLogs, Credentials, SharedIniFileCredentials } from 'aws-sdk';
 import * as merge from 'lodash.merge';
@@ -23,6 +23,7 @@ export class AWS {
 
   constructor(environment?: EnvironmentOptions) {
     this.properties = this.getDefaultProperties(Utils.properties, environment);
+    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options);
 
     // Also support credentials provided in the YML file
     let credentials: Credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
@@ -70,7 +71,6 @@ export class AWS {
   }
 
   async apply(): Promise<void> {
-    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options);
     await this.createRepository();
     await this.createCluster();
     await this.createLoadbalancer();
@@ -424,7 +424,7 @@ export class AWS {
   }
 
   private errorHandler(error) {
-    if (error.code === 'AccessDeniedException' || error.code === 'InvalidSignatureException' || error.code === 'UnauthorizedOperation') {
+    if (error.code === 'AccessDeniedException' || error.code === 'InvalidSignatureException' || error.code === 'UnauthorizedOperation' || error.code === 'UnrecognizedClientException') {
       this.log.error(`Err... this is embarrassing. You don't have the required permissions to perform this operation 👇`);
       this.log.error(error.message);
       process.exit(-1);
@@ -433,126 +433,183 @@ export class AWS {
     }
   }
 
-  private getDefaultProperties(properties: ProjectProperties, environment?: EnvironmentOptions) {
+  private getDefaultProperties(properties: ProjectProperties, environment?: EnvironmentOptions): ProjectProperties {
+    let suffix = environment && environment.suffix ? environment.suffix : '';
+    suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+    const name = environment && environment.suffix ? properties.options.name + suffix : properties.options.name;
 
-    const env: AWSOptions = environment ? environment.aws || <AWSOptions>{} : <AWSOptions>{};
-
-    let defaults = merge({
-      options: {
-        aws: {
-          region: 'us-east-1',
-          profile: properties.options.name,
-          ecr: {
-            repositoryName: properties.options.name
-          },
-          ecs: {
-            cluster: {
-              clusterName: properties.options.name
-            },
-            listener: {
-              Port: 80,
-              Protocol: 'HTTP'
-            },
-            loadbalancer: {
-              Name: properties.options.name
-            },
-            service: {
-              desiredCount: 1,
-              serviceName: properties.options.name,
-              loadBalancers: [
-                {
-                  containerName: properties.options.name,
-                  containerPort: 80
-                }
-              ]
-            },
-            targetGroup: {
-              VpcId: properties.options.aws ? properties.options.aws.vpcId : null,
-              Name: properties.options.name,
-              Protocol: 'HTTP',
-              Port: 80,
-            },
-            taskDefinition: {
-              family: properties.options.name,
-              containerDefinitions: [
-                {
-                  name: properties.options.name,
-                  memoryReservation: 128,
-                  portMappings: [
-                    {
-                      containerPort: 80,
-                      hostPort: 0
-                    }
-                  ],
-                  logConfiguration: {
-                    logDriver: 'awslogs',
-                    options: {
-                      'awslogs-region': properties.options.aws.region ? properties.options.aws.region : 'us-east-1',
-                      'awslogs-group': properties.options.name
-                    }
-                  },
-                }
-              ]
+    const env: AWSOptions = environment && environment.aws ? Object.assign({}, environment.aws) : <AWSOptions>{};
+    const fromYml: AWSOptions = properties.options && properties.options.aws ? Object.assign({}, properties.options.aws) : <AWSOptions>{};
+    // @ts-ignore
+    const defaults: AWSOptions = {
+      region: 'us-east-1',
+      profile: name,
+      ecr: {
+        repositoryName: name
+      },
+      ecs: {
+        cluster: {
+          clusterName: name
+        },
+        // @ts-ignore because we do not know the LoadbalancerARN yet
+        listener: {
+          Port: 80,
+          Protocol: 'HTTP'
+        },
+        loadbalancer: {
+          Name: name
+        },
+        // @ts-ignore because the taskDefinition needs to be registered first
+        service: {
+          desiredCount: 1,
+          serviceName: name,
+          loadBalancers: [
+            {
+              containerName: name,
+              containerPort: 80
             }
-          }
+          ]
+        },
+        // @ts-ignore because we don't know the VpcID yet
+        targetGroup: {
+          Name: name,
+          Protocol: 'HTTP',
+          Port: 80,
+        },
+        taskDefinition: {
+          family: name,
+          containerDefinitions: [
+            {
+              name: name,
+              memoryReservation: 128,
+              portMappings: [
+                {
+                  containerPort: 80,
+                  hostPort: 0
+                }
+              ],
+              logConfiguration: {
+                logDriver: 'awslogs',
+                options: {
+                  'awslogs-region': 'us-east-1',
+                  'awslogs-group': name
+                }
+              },
+            }
+          ]
         }
       }
-    }, properties, {
-      options: {
-        aws: env
+    };
+
+    const result: AWSOptions = this.mergeAWSOptions(env, fromYml, defaults);
+
+    if (result.ecs && result.ecs.taskDefinition) {
+      // Make sure the cloudwatch region is set to the default region
+      result.ecs.taskDefinition.containerDefinitions.forEach((containerDefinition) => {
+        containerDefinition.logConfiguration.options['awslogs-region'] = result.region;
+      });
+
+      // Set the service taskDefinition
+      result.ecs.service.taskDefinition = result.ecs.taskDefinition.family;
+    }
+
+    if (result.ecs && result.ecs.targetGroup) {
+      // Set the TargetGroup VpcId to the YML VpcId
+      result.ecs.targetGroup.VpcId = result.vpcId;
+    }
+
+    return Object.assign(properties, {
+      options: Object.assign(properties.options, {
+        aws: result
+      })
+    });
+  }
+
+  private mergeAWSOptions(...args: Array<AWSOptions>): AWSOptions {
+    const result: AWSOptions = <AWSOptions>{};
+
+    const keys = new Set();
+    args.forEach((item: AWSOptions) => {
+      Object.keys(item).forEach((key) => keys.add(key));
+    });
+
+
+    keys.forEach((key) => {
+      const items = args.filter((arg) => arg[key]).map((arg) => arg[key]);
+      if (typeof items[0] === 'string' || typeof items[0] === 'number') {
+        result[key] = items[0];
+      } else if (items[0] instanceof Array) {
+        result[key] = merge(...items);
+      } else {
+        result[key] = this.mergeRecursive(...items);
       }
     });
 
-    if (environment && environment.suffix) {
-      let suffix = environment.suffix;
-      suffix = suffix.startsWith('-') ? suffix : '-' + suffix;
+    return result;
+  }
 
-      defaults = merge(defaults, {
-        options: {
-          aws: {
-            ecr: {
-              repositoryName: defaults.options.aws.ecr.repositoryName + suffix
-            },
-            ecs: {
-              cluster: {
-                clusterName: defaults.options.aws.ecs.cluster.clusterName + suffix
-              },
-              loadbalancer: {
-                Name: defaults.options.aws.ecs.loadbalancer.Name + suffix
-              },
-              service: {
-                serviceName: defaults.options.aws.ecs.service.serviceName + suffix,
-                loadBalancers: [
-                  {
-                    containerName: defaults.options.aws.ecs.service.loadBalancers[0].containerName + suffix,
-                  }
-                ]
-              },
-              targetGroup: {
-                Name: defaults.options.aws.ecs.targetGroup.Name + suffix,
-              },
-              taskDefinition: {
-                family: defaults.options.aws.ecs.taskDefinition.family + suffix,
-                containerDefinitions: [
-                  {
-                    name: defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].name + suffix,
-                    logConfiguration: {
-                      options: {
-                        'awslogs-group': defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].logConfiguration.options['awslogs-group'] + suffix
-                      }
-                    },
-                  }
-                ]
-              }
+  private mergeRecursive(...args): any|Array<any> {
+    const result = {};
+
+    const keys = new Set();
+    args.forEach((item: any) => {
+      Object.keys(item).forEach((key) => keys.add(key));
+    });
+
+
+    keys.forEach((key) => {
+      const items = args.filter((arg) => arg[key] !== undefined && arg[key] !== null).map((arg) => arg[key]);
+      const type = this.nestedType(items);
+
+      if (type === 'string' || type === 'number') {
+        result[key] = items.reduce((previous, next) => {
+          if (previous !== undefined && previous !== null) return previous;
+          return next;
+        });
+      } else if (type === 'array') {
+        if (this.nestedType(items[0]) === 'object') {
+          if (key === 'environment') {
+            const merged = [];
+            items.forEach((entries) => merged.push(...entries));
+            result[key] = merged;
+          } else {
+            const entries = [];
+            const length = items.reduce((previous, next) => (next.length >= previous.length) ? next : previous).length;
+            for (let i = 0; i < length; i++) {
+              const objects = items.filter((item) => item[i] !== undefined && item[i] !== null).map((item) => item[i]);
+              entries[i] = this.mergeRecursive(...objects);
             }
+            result[key] = entries;
           }
+        } else {
+          // We need to reverse the items to ensure the right order is applied by lodash.merge
+          result[key] = merge(...items.reverse());
         }
-      });
-    }
+      } else {
+        result[key] = this.mergeRecursive(...items);
+      }
+    });
 
-    defaults.options.aws.ecs.service.taskDefinition = defaults.options.aws.ecs.service.taskDefinition || defaults.options.aws.ecs.taskDefinition.family;
-    defaults.options.aws.ecs.service.loadBalancers.forEach((loadBalancer) => loadBalancer.containerName = defaults.options.aws.ecs.taskDefinition.containerDefinitions[0].name);
-    return defaults;
+    return result;
+  }
+
+  private nestedType(items: Array<any>): 'string'|'number'|'boolean'|'symbol'|'undefined'|'function'|'array'|'object' {
+    if (items instanceof Array) {
+      let item = null;
+      if (items.length === 1) {
+        item = items[0];
+      } else if (items.length > 1) {
+        item = items.reduce((previous, next) => {
+          if (typeof previous !== typeof next) throw new Error('Types of nested objects do not match');
+          return previous;
+        });
+      }
+
+      if (Array.isArray(item)) return 'array';
+      return typeof item;
+    } else {
+      return typeof items;
+    }
   }
 
 }

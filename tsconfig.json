@@ -1,5 +1,9 @@
 {
     "compilerOptions": {
+        "lib": [
+          "esnext",
+          "dom"
+        ],
         "experimentalDecorators": true,
         "module": "commonjs",
         "target": "es6",
