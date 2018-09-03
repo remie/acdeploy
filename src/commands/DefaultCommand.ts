@@ -38,11 +38,16 @@ export class DefaultCommand extends AbstractCommand {
     }
 
     // Start deployment of this project
-    const environment = await this.getEnvironment();
-    const docker: Docker = new Docker(environment);
-    await docker.build();
-    await docker.push();
-    await new AWS(environment).deploy();
+    const environments: Array<EnvironmentOptions> = await this.getEnvironments();
+    await environments.reduce((previousDeployment, environment) => {
+      return previousDeployment.then(async () => {
+        const docker: Docker = new Docker(environment);
+        await docker.build();
+        await docker.push();
+        await new AWS(environment).deploy();
+      });
+    }, Promise.resolve());
+
     this.log.info(`Successfully deployed ${properties.options.name} 🏆`);
   }
 
@@ -50,7 +55,7 @@ export class DefaultCommand extends AbstractCommand {
     Utils.showHelp();
   }
 
-  private async getEnvironment(): Promise<EnvironmentOptions> {
+  private async getEnvironments(): Promise<Array<EnvironmentOptions>> {
     const properties = await this.getProperties();
 
     let branch: string;
@@ -66,13 +71,7 @@ export class DefaultCommand extends AbstractCommand {
 
     let test: string|RegExp;
     const environments: Array<EnvironmentOptions> = Object.keys(properties.options.environments).map((name: string) => properties.options.environments[name]);
-    return environments.reduce((selected: EnvironmentOptions, environment: EnvironmentOptions) => {
-      if (environment.enabled && this.isEnvironmentBranch(branch, environment.branch)) {
-        return environment;
-      } else {
-        return selected;
-      }
-    });
+    return environments.filter((environment) => environment.enabled && this.isEnvironmentBranch(branch, environment.branch));
   }
 
   private isEnvironmentBranch(current: string, required: string|RegExp): boolean {
