@@ -61,7 +61,7 @@ export class DefaultCommand extends AbstractCommand {
     let branch: string;
     switch (properties.options.ci.name.toLowerCase()) {
       case 'travis':
-        if (process.env.TRAVIS_PULL_REQUEST_BRANCH !== '') {
+        if (process.env.TRAVIS_PULL_REQUEST_BRANCH !== undefined && process.env.TRAVIS_PULL_REQUEST_BRANCH !== '') {
           branch = process.env.TRAVIS_PULL_REQUEST_BRANCH;
         } else {
           branch = process.env.TRAVIS_BRANCH;
@@ -69,7 +69,6 @@ export class DefaultCommand extends AbstractCommand {
         break;
     }
 
-    let test: string|RegExp;
     const environments: Array<EnvironmentOptions> = Object.keys(properties.options.environments).map((name: string) => properties.options.environments[name]);
     return environments.filter((environment) => environment.enabled && this.isEnvironmentBranch(branch, environment.branch));
   }
