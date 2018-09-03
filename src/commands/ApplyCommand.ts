@@ -11,7 +11,6 @@ export class ApplyCommand extends AbstractCommand {
   async run(): Promise<void> {
     // Make sure to save the properties to persist answers
     const properties = await this.getProperties();
-    Utils.toYAML(properties);
 
     this.log.info(`Creating Amazon Web Services infrastructure for ${properties.options.name} 🤞`);
     if (properties.options.environments && Object.keys(properties.options.environments).length > 0) {
