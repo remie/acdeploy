@@ -23,7 +23,7 @@ export class AWS {
 
   constructor(environment?: EnvironmentOptions) {
     this.properties = this.getDefaultProperties(Utils.properties, environment);
-    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options);
+    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options, false);
 
     // Also support credentials provided in the YML file
     let credentials: Credentials = new SharedIniFileCredentials({profile: this.properties.options.aws.profile});
@@ -71,6 +71,9 @@ export class AWS {
   }
 
   async apply(): Promise<void> {
+    // Make sure to check for missing environment variables
+    this.properties.options = Utils.replaceEnvironmentVariables(this.properties.options, true);
+
     await this.createRepository();
     await this.createCluster();
     await this.createLoadbalancer();

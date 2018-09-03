@@ -227,20 +227,20 @@ export class Utils {
     process.exit();
   }
 
-  static replaceEnvironmentVariables(options: ACDeployOptions): ACDeployOptions {
-    return Utils.replaceEnvironmentVariablesRecursively(options);
+  static replaceEnvironmentVariables(options: ACDeployOptions, failIfMissing: boolean): ACDeployOptions {
+    return Utils.replaceEnvironmentVariablesRecursively(options, failIfMissing);
   }
 
-  private static replaceEnvironmentVariablesRecursively(options: any): any {
+  private static replaceEnvironmentVariablesRecursively(options: any, failIfMissing: boolean): any {
     if (typeof options === 'string') {
-      options = Utils.replaceEnvironmentVariable(options);
+      options = Utils.replaceEnvironmentVariable(options, failIfMissing);
     } else if (options instanceof Array) {
-      options = options.map((item: any) => Utils.replaceEnvironmentVariablesRecursively(item));
+      options = options.map((item: any) => Utils.replaceEnvironmentVariablesRecursively(item, failIfMissing));
     } else if (typeof options === 'object' && Object.keys(options).length > 0) {
       Object.keys(options).forEach((key) => {
         // Do not replace environment variables in CI section
         if (key !== 'ci') {
-          options[key] = Utils.replaceEnvironmentVariablesRecursively(options[key]);
+          options[key] = Utils.replaceEnvironmentVariablesRecursively(options[key], failIfMissing);
         }
       });
     }
@@ -248,7 +248,7 @@ export class Utils {
     return options;
   }
 
-  private static replaceEnvironmentVariable(content: string) {
+  private static replaceEnvironmentVariable(content: string, failIfMissing: boolean) {
     // Replace environment variables
     const missing = [];
     const matches = content.match(/\$\{.*\}/gi) || [];
@@ -266,7 +266,7 @@ export class Utils {
     });
 
     // Check if we have missing variables
-    if (missing.length > 0) {
+    if (missing.length > 0 && failIfMissing) {
       const log = Utils.getLogger();
       log.error(`Oh nooo! You have put environment variables in your acdeploy config file, but I can't find them on this machine`);
       log.error(`Missing environment variables: ${missing.join(',')}`);

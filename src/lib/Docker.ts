@@ -97,7 +97,7 @@ export class Docker {
     this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
 
     const env = [];
-    const options = Utils.replaceEnvironmentVariables(Utils.properties.options);
+    const options = Utils.replaceEnvironmentVariables(Utils.properties.options, true);
     if (options.aws &&
       options.aws.ecs &&
       options.aws.ecs.taskDefinition &&
