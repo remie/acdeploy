@@ -116,12 +116,14 @@ export class Utils {
       aws.forEach((aws: AWSOptions) => {
         if (aws.ecs && aws.ecs.taskDefinition && aws.ecs.taskDefinition.containerDefinitions) {
           aws.ecs.taskDefinition.containerDefinitions = aws.ecs.taskDefinition.containerDefinitions.map((item) => {
-            item.environment = item.environment.map((entry) => {
-              if (!entry.value) {
-                entry.value = `\$\{${entry.name}\}`;
-              }
-              return entry;
-            });
+            if (item.environment) {
+              item.environment = item.environment.map((entry) => {
+                if (!entry.value) {
+                  entry.value = `\$\{${entry.name}\}`;
+                }
+                return entry;
+              });
+            }
             return item;
           });
         }
