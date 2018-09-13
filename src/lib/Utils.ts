@@ -106,10 +106,15 @@ export class Utils {
 
       // Set environment variables value from name attribute (if not set)
       const aws = [];
-      aws.push(properties.options.aws);
+      if (properties.options.aws) {
+        aws.push(properties.options.aws);
+      }
+
       if (properties.options.environments && Object.keys(properties.options.environments).length > 0) {
         Object.keys(properties.options.environments).forEach((name) => {
-          aws.push(properties.options.environments[name].aws);
+          if (properties.options.environments[name].aws) {
+            aws.push(properties.options.environments[name].aws);
+          }
         });
       }
 
