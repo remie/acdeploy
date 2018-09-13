@@ -25,8 +25,13 @@ export default class NodeJS extends AbstractBuildPack {
     return version.toString();
   }
 
+  get hasPostInstall(): boolean {
+    const pkg = require(path.join(process.cwd(), 'package.json'));
+    return (pkg.scripts && pkg.scripts.postinstall);
+  }
+
   get body() {
-    return `
+    let body = `
 
 WORKDIR /opt
 COPY ./package.json package.json
@@ -34,8 +39,15 @@ COPY ./package-lock.json package-lock.json
 RUN npm install
 
 COPY . ./
-RUN npm run postinstall
     `;
+
+    if (this.hasPostInstall) {
+      body += `
+RUN npm run postinstall
+`;
+    }
+
+    return body;
   }
 
   get command() {
