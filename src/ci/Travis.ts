@@ -17,9 +17,9 @@ export class Travis implements CI {
   private log;
   private jobs: any;
 
-  constructor(jobs?: any) {
+  constructor(jobs?: Array<any>) {
     this.log = Utils.getLogger();
-    this.jobs = jobs || {};
+    this.jobs = jobs || [];
   }
 
   create() {

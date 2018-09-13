@@ -43,7 +43,7 @@ export interface EnvironmentOptions {
 
 export interface CIOptions {
   name: SupportedCI;
-  jobs?: any;
+  jobs?: Array<any>;
 }
 
 export interface DockerOptions {
