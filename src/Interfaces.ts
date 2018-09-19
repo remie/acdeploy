@@ -49,6 +49,7 @@ export interface CIOptions {
 
 export interface DockerOptions {
   name: string;
+  dockerFile: string;
   buildArgs: Array<DockerBuildArguments>;
   repository: DockerRepositoryOptions;
 }

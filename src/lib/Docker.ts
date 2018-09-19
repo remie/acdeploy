@@ -128,6 +128,10 @@ export class Docker {
   }
 
   private toDockerfile() {
+    if (Utils.properties.options.docker.dockerFile) {
+      return Utils.properties.options.docker.dockerFile;
+    }
+
     return `
 FROM ${Utils.properties.options.buildPack.image}:${Utils.properties.options.buildPack.tag}
 
