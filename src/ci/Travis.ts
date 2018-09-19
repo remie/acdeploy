@@ -61,6 +61,8 @@ export class Travis implements CI {
       return 'php';
     } else if (Utils.properties.options.buildPack instanceof NodeJSBuildPack) {
       return 'node_js';
+    } else {
+      return 'node_js';
     }
   }
 
