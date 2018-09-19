@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, DockerOptions, BuildPack, EnvironmentOptions } from '../Interfaces';
+import { ProjectProperties, DockerOptions, BuildPack, EnvironmentOptions, ACDeployOptions } from '../Interfaces';
 import { Utils } from './Utils';
 import { AWS } from './AWS';
 import * as fs from 'fs-extra';
@@ -63,6 +63,17 @@ export class Docker {
       }
     } catch (error) {}
 
+    const options = Utils.replaceEnvironmentVariables(<any>{
+      docker: Utils.properties.options.docker
+    }, true);
+
+    if (options.docker && options.docker.buildArgs) {
+      options.docker.buildArgs.forEach((buildArg) => {
+        buildCmd.push('--build-arg');
+        buildCmd.push(`${buildArg.name}=${buildArg.value}`);
+      });
+    }
+
     // Build the docker file
     this.log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
     await this.exec(buildCmd.concat(['-t', Utils.properties.options.docker.name, '.']), true);
@@ -97,7 +108,7 @@ export class Docker {
     this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
 
     const env = [];
-    const options = Utils.replaceEnvironmentVariables(Utils.properties.options, true);
+    const options = Utils.replaceEnvironmentVariables(Utils.properties.options, false);
     if (options.aws &&
       options.aws.ecs &&
       options.aws.ecs.taskDefinition &&
@@ -120,10 +131,31 @@ export class Docker {
     return `
 FROM ${Utils.properties.options.buildPack.image}:${Utils.properties.options.buildPack.tag}
 
+${this.buildArgs}
+
 ${Utils.properties.options.buildPack.body}
 
 ${Utils.properties.options.buildPack.command}
 `.trim();
+  }
+
+  private get buildArgs() {
+    let args = '';
+
+    const options = Utils.replaceEnvironmentVariables(<any>{
+      docker: Utils.properties.options.docker
+    }, true);
+
+    if (options.docker && options.docker.buildArgs) {
+      options.docker.buildArgs.forEach((buildArg) => {
+        args += `
+ARG ${buildArg.name}
+ENV ${buildArg.name}=\$\{${buildArg.name}\}
+`;
+      });
+    }
+
+    return args;
   }
 
   private getDockerIgnore() {

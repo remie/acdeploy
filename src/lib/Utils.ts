@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions } from '../Interfaces';
+import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions, DockerBuildArguments } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
 import { DefaultCommand } from '../commands/DefaultCommand';
 import { InitCommand } from '../commands/InitCommand';
@@ -134,6 +134,15 @@ export class Utils {
         }
       });
 
+      if (properties.options.docker && properties.options.docker.buildArgs) {
+        properties.options.docker.buildArgs = properties.options.docker.buildArgs.map((entry) => {
+          if (!entry.value) {
+            entry.value = `\$\{${entry.name}\}`;
+          }
+          return entry;
+        });
+      }
+
       Utils._properties = properties;
     }
 
@@ -199,7 +208,7 @@ export class Utils {
     switch (Utils.properties.options.ci.name.toLowerCase()) {
       case 'travis':
       default:
-        return new Travis(Utils.properties.options.ci.jobs);
+        return new Travis();
     }
   }
 

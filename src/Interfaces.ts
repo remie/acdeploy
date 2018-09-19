@@ -43,12 +43,19 @@ export interface EnvironmentOptions {
 
 export interface CIOptions {
   name: SupportedCI;
-  jobs?: Array<any>;
+  predeploy?: Array<any>;
+  postdeploy?: Array<any>;
 }
 
 export interface DockerOptions {
   name: string;
+  buildArgs: Array<DockerBuildArguments>;
   repository: DockerRepositoryOptions;
+}
+
+export interface DockerBuildArguments {
+  name: string;
+  value: string;
 }
 
 export interface DockerRepositoryOptions {

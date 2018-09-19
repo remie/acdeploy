@@ -15,11 +15,9 @@ import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
 export class Travis implements CI {
 
   private log;
-  private jobs: any;
 
-  constructor(jobs?: Array<any>) {
+  constructor() {
     this.log = Utils.getLogger();
-    this.jobs = jobs || [];
   }
 
   create() {
@@ -28,6 +26,28 @@ export class Travis implements CI {
 
   delete() {
     fs.unlinkSync(path.join(process.cwd(), this.filename));
+  }
+
+  private get predeployStages() {
+    let result = '';
+    const stages = Utils.properties.options.ci.predeploy || [];
+    stages.forEach((stage) => {
+      let yml = yamljs.stringify(stage, 4, 2) + '\n';
+      yml = yml.split('\n').slice(1).join('\n    ');
+      result += '- ' + yml.trim();
+    });
+    return result;
+  }
+
+  private get postdeployStages() {
+    let result = '';
+    const stages = Utils.properties.options.ci.postdeploy || [];
+    stages.forEach((stage) => {
+      let yml = yamljs.stringify(stage, 4, 2) + '\n';
+      yml = yml.split('\n').slice(1).join('\n    ');
+      result += '- ' + yml.trim();
+    });
+    return result;
   }
 
   private get filename(): string {
@@ -45,12 +65,6 @@ export class Travis implements CI {
   }
 
   private get yml(): string {
-    let jobs: string = '';
-    this.jobs.forEach((job) => {
-      let yml = yamljs.stringify(this.jobs, 4, 2) + '\n';
-      yml = yml.split('\n').slice(1).join('\n    ');
-      jobs += '- ' + yml.trim();
-    });
 
   return `
 sudo: required
@@ -58,7 +72,7 @@ language: ${this.language}
 
 jobs:
   include:
-    ${jobs}
+    ${this.predeployStages}
     - stage: deploy
       node_js: 8
       services:
@@ -71,6 +85,7 @@ jobs:
         - npm install -g @remie/acdeploy
         - acdeploy login
         - acdeploy
+    ${this.postdeployStages}
 `;
   }
 
