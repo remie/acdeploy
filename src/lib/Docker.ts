@@ -107,6 +107,12 @@ export class Docker {
   async run(): Promise<void> {
     this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
 
+    // Stop running containers to avoid conflict
+    try {
+      await this.exec([ 'stop', Utils.properties.options.docker.name ], false);
+      await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+    } catch {}
+
     const env = [];
     const options = Utils.replaceEnvironmentVariables(Utils.properties.options, false);
     if (options.aws &&
