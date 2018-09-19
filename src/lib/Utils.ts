@@ -277,7 +277,8 @@ export class Utils {
       if (!value) {
         missing.push(match);
       } else {
-        content = content.replace(new RegExp('\\$\\{' + match + '\\}', 'gi'), value);
+        // Make sure environment variables are strings, even though they can be provided as objects
+        content = content.replace(new RegExp('\\$\\{' + match + '\\}', 'gi'), (typeof value !== 'string') ? JSON.stringify(value) : value);
       }
     });
 
