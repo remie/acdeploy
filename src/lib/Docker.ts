@@ -17,13 +17,14 @@ export class Docker {
 
   private aws: AWS;
   private log: bunyan;
+  private properties: ProjectProperties;
 
   constructor(environment?: EnvironmentOptions) {
     let suffix = environment && environment.suffix ? environment.suffix : '';
     suffix = (suffix === '' || suffix.startsWith('-')) ? suffix : '-' + suffix;
 
     // Set the default Docker properties
-    Utils.properties = merge(Utils.properties, {
+    this.properties = merge(Utils.properties, {
       options: {
         docker: {
           name: Utils.properties.options.name + suffix
@@ -45,11 +46,11 @@ export class Docker {
     this.log.info('Creating Dockerfile 🐳. This file SHOULD NOT be committed to version control ⛔');
 
     // Write Dockerfile to disk
-    await fs.writeFile(path.join(Utils.properties.basedir, 'Dockerfile'), this.toDockerfile());
+    await fs.writeFile(path.join(this.properties.basedir, 'Dockerfile'), this.toDockerfile());
 
     // Only write .dockerignore to disk when deploying
     // Some of the ignored local files will probably be needed when running `acdeploy --serve`
-    await fs.writeFile(path.join(Utils.properties.basedir, '.dockerignore'), this.getDockerIgnore());
+    await fs.writeFile(path.join(this.properties.basedir, '.dockerignore'), this.getDockerIgnore());
 
     const buildCmd = ['build'];
     try {
@@ -64,7 +65,7 @@ export class Docker {
     } catch (error) {}
 
     const options = Utils.replaceEnvironmentVariables(<any>{
-      docker: Utils.properties.options.docker
+      docker: this.properties.options.docker
     }, true);
 
     if (options.docker && options.docker.buildArgs) {
@@ -76,12 +77,12 @@ export class Docker {
 
     // Build the docker file
     this.log.info('Building Docker image. You can get something to drink ☕, play some guitar 🎸 or do your chores 💪, \'cause this can take a whale 🐋');
-    await this.exec(buildCmd.concat(['-t', Utils.properties.options.docker.name, '.']), true);
+    await this.exec(buildCmd.concat(['-t', this.properties.options.docker.name, '.']), true);
   }
 
   async tag(name: string, tag: string = 'latest'): Promise<string> {
-    this.log.info(`Tagging Docker image '${Utils.properties.options.docker.name}:latest' as '${name}:${tag}' 💪`);
-    await this.exec(['tag', `${Utils.properties.options.docker.name}:latest`, `${name}:${tag}`]);
+    this.log.info(`Tagging Docker image '${this.properties.options.docker.name}:latest' as '${name}:${tag}' 💪`);
+    await this.exec(['tag', `${this.properties.options.docker.name}:latest`, `${name}:${tag}`]);
     return `${name}:${tag}`;
   }
 
@@ -105,16 +106,16 @@ export class Docker {
   }
 
   async run(): Promise<void> {
-    this.log.info(`Starting docker container ${Utils.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
+    this.log.info(`Starting docker container ${this.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
 
     // Stop running containers to avoid conflict
     try {
-      await this.exec([ 'stop', Utils.properties.options.docker.name ], false);
+      await this.exec([ 'stop', this.properties.options.docker.name ], false);
       await new Promise((resolve) => setTimeout(() => resolve(), 2000));
     } catch {}
 
     const env = [];
-    const options = Utils.replaceEnvironmentVariables(Utils.properties.options, false);
+    const options = Utils.replaceEnvironmentVariables(this.properties.options, false);
     if (options.aws &&
       options.aws.ecs &&
       options.aws.ecs.taskDefinition &&
@@ -124,28 +125,28 @@ export class Docker {
       env.push(...options.aws.ecs.taskDefinition.containerDefinitions[0].environment);
     }
 
-    const args = ['run', '--rm', '--name', Utils.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443'];
+    const args = ['run', '--rm', '--name', this.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443'];
     env.forEach((entry) => {
       args.push(...['-e', `${entry.name}=${entry.value}`]);
     });
-    args.push(Utils.properties.options.docker.name);
+    args.push(this.properties.options.docker.name);
 
     await this.exec(args, true);
   }
 
   private toDockerfile() {
-    if (Utils.properties.options.docker.dockerFile) {
-      return Utils.properties.options.docker.dockerFile;
+    if (this.properties.options.docker.dockerFile) {
+      return this.properties.options.docker.dockerFile;
     }
 
     return `
-FROM ${Utils.properties.options.buildPack.image}:${Utils.properties.options.buildPack.tag}
+FROM ${this.properties.options.buildPack.image}:${this.properties.options.buildPack.tag}
 
 ${this.buildArgs}
 
-${Utils.properties.options.buildPack.body}
+${this.properties.options.buildPack.body}
 
-${Utils.properties.options.buildPack.command}
+${this.properties.options.buildPack.command}
 `.trim();
   }
 
@@ -153,7 +154,7 @@ ${Utils.properties.options.buildPack.command}
     let args = '';
 
     const options = Utils.replaceEnvironmentVariables(<any>{
-      docker: Utils.properties.options.docker
+      docker: this.properties.options.docker
     }, true);
 
     if (options.docker && options.docker.buildArgs) {
@@ -181,11 +182,11 @@ acdeploy.yaml
 Dockerfile
 `;
 
-    dockerIgnore += Utils.properties.options.buildPack.dockerignore;
+    dockerIgnore += this.properties.options.buildPack.dockerignore;
     return dockerIgnore;
   }
 
-  private async exec(parameters: Array<string>, verbose: boolean = Utils.properties.verbose): Promise<void> {
+  private async exec(parameters: Array<string>, verbose: boolean = this.properties.verbose): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const docker = spawn('docker', parameters);
       if (verbose) {
