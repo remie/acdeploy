@@ -146,23 +146,25 @@ export class Utils {
       Utils._properties = properties;
     }
 
-    if (typeof Utils._properties.options.buildPack === 'string') {
-      const files = fs.readdirSync(Utils._properties.basedir);
-      switch (Utils._properties.options.buildPack) {
+    const result = JSON.parse(JSON.stringify(Utils._properties));
+
+    if (typeof result.options.buildPack === 'string') {
+      const files = fs.readdirSync(result.basedir);
+      switch (result.options.buildPack) {
         case MavenBuildPack.toString():
-          Utils._properties.options.buildPack = new MavenBuildPack();
+          result.options.buildPack = new MavenBuildPack();
           break;
         case PHPBuildPack.toString():
           const useBower = files.indexOf('bower.json') >= 0;
-          Utils._properties.options.buildPack = new PHPBuildPack(useBower);
+          result.options.buildPack = new PHPBuildPack(useBower);
           break;
         case NodeJSBuildPack.toString():
-          Utils._properties.options.buildPack = new NodeJSBuildPack();
+          result.options.buildPack = new NodeJSBuildPack();
           break;
       }
     }
 
-    return JSON.parse(JSON.stringify(Utils._properties));
+    return result;
   }
 
   static set properties(value: ProjectProperties) {
