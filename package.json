@@ -1,5 +1,5 @@
 {
-  "version": "0.11.2",
+  "version": "0.11.3",
   "name": "@remie/acdeploy",
   "description": "Automatic Container Deployment (acdeploy): keeping you cool while deploying",
   "bin": {
