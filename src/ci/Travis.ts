@@ -33,8 +33,10 @@ export class Travis implements CI {
     const stages = Utils.properties.options.ci.predeploy || [];
     stages.forEach((stage) => {
       let yml = yamljs.stringify(stage, 4, 2) + '\n';
-      yml = yml.split('\n').slice(1).join('\n    ');
-      result += '- ' + yml.trim();
+      const firstline = yml.split('\n')[0];
+      result += `- ${firstline}\n`;
+      yml = yml.split('\n').slice(1).join('\n      ');
+      result += '      ' + yml.trim();
     });
     return result;
   }
@@ -44,8 +46,10 @@ export class Travis implements CI {
     const stages = Utils.properties.options.ci.postdeploy || [];
     stages.forEach((stage) => {
       let yml = yamljs.stringify(stage, 4, 2) + '\n';
-      yml = yml.split('\n').slice(1).join('\n    ');
-      result += '- ' + yml.trim();
+      const firstline = yml.split('\n')[0];
+      result += `- ${firstline}\n`;
+      yml = yml.split('\n').slice(1).join('\n      ');
+      result += '      ' + yml.trim();
     });
     return result;
   }
@@ -54,23 +58,10 @@ export class Travis implements CI {
     return '.travis.yml';
   }
 
-  private get language(): string {
-    if (Utils.properties.options.buildPack instanceof MavenBuildPack) {
-      return 'java';
-    } else if (Utils.properties.options.buildPack instanceof PHPBuildPack) {
-      return 'php';
-    } else if (Utils.properties.options.buildPack instanceof NodeJSBuildPack) {
-      return 'node_js';
-    } else {
-      return 'node_js';
-    }
-  }
-
   private get yml(): string {
 
   return `
-sudo: required
-language: ${this.language}
+language: minimal
 
 jobs:
   include:
@@ -81,12 +72,13 @@ jobs:
         - docker
       script:
         - sudo apt-get update
-        - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+        - wget -qO- https://deb.nodesource.com/setup_8.x | sudo -E bash -
+        - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce nodejs
         - export AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID}
         - export AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY}
-        - npm install -g @remie/acdeploy
-        - acdeploy login
-        - acdeploy
+        - sudo npm install -g @remie/acdeploy
+        - sudo acdeploy login
+        - sudo acdeploy
     ${this.postdeployStages}
 `;
   }
