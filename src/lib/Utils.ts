@@ -118,18 +118,18 @@ export class Utils {
         });
       }
 
-      aws.forEach((aws: AWSOptions) => {
-        if (aws.ecs && aws.ecs.taskDefinition && aws.ecs.taskDefinition.containerDefinitions) {
-          aws.ecs.taskDefinition.containerDefinitions = aws.ecs.taskDefinition.containerDefinitions.map((item) => {
-            if (item.environment) {
-              item.environment = item.environment.map((entry) => {
+      aws.forEach((entry: AWSOptions) => {
+        if (entry.ecs && entry.ecs.taskDefinition && entry.ecs.taskDefinition.containerDefinitions) {
+          entry.ecs.taskDefinition.containerDefinitions = entry.ecs.taskDefinition.containerDefinitions.map((containerDefinition) => {
+            if (containerDefinition.environment) {
+              containerDefinition.environment = containerDefinition.environment.map((entry) => {
                 if (!entry.value) {
                   entry.value = `\$\{${entry.name}\}`;
                 }
                 return entry;
               });
             }
-            return item;
+            return containerDefinition;
           });
         }
       });
@@ -162,7 +162,7 @@ export class Utils {
       }
     }
 
-    return Utils._properties;
+    return JSON.parse(JSON.stringify(Utils._properties));
   }
 
   static set properties(value: ProjectProperties) {
