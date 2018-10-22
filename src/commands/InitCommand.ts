@@ -38,7 +38,7 @@ export class InitCommand extends AbstractCommand {
         type: 'list',
         name: 'options.ci.name',
         message: `Pick your Continuous Integration server`,
-        choices: [ 'Travis' ],
+        choices: [ 'Travis', 'CircleCI' ],
         when: (answers) => !defaults.options.ci,
       }
     ];

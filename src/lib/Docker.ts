@@ -176,6 +176,7 @@ ENV ${buildArg.name}=\$\{${buildArg.name}\}
 .acdeploy.yaml
 acdeploy.yml
 acdeploy.yaml
+.circleci
 .travis.yml
 .git
 .dockerignore

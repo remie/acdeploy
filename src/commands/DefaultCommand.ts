@@ -67,6 +67,9 @@ export class DefaultCommand extends AbstractCommand {
           branch = process.env.TRAVIS_BRANCH;
         }
         break;
+      case 'circleci':
+        branch = process.env.CIRCLE_BRANCH;
+        break;
     }
 
     const environments: Array<EnvironmentOptions> = Object.keys(properties.options.environments).map((name: string) => properties.options.environments[name]);

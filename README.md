@@ -34,7 +34,7 @@ Step 5: Watch your CI environment do the rest
 ACDeploy is specifically created for a workflow that uses version control, continuous integration and a cloud platform. At this point, the following tools are supported:
 
 - *Version control*: GitHub
-- *Continuous integration*: TravisCI
+- *Continuous integration*: TravisCI, CircleCI
 - *Cloud platform*: Amazon Web Services
 
 To be able to use ACDeploy in your project, you should create a GitHub account and host your project there. Use your GitHub credentials to log into TravisCI and enable TravisCI for your project. Finally, create an AWS account (you will need the API credentials).

@@ -101,5 +101,5 @@ export interface CI {
   delete: () => void;
 }
 
-export type SupportedCI = 'travis' | string;
+export type SupportedCI = 'travis' | 'circleci' | string;
 export type SupportedDockerRepositories = 'aws-ecr';

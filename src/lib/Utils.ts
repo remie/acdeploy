@@ -11,6 +11,7 @@ import { ApplyCommand } from '../commands/ApplyCommand';
 import { ServeCommand } from '../commands/ServeCommand';
 import { ClearCommand } from '../commands/ClearCommand';
 import { Travis } from '../ci/Travis';
+import { CircleCI } from '../ci/CircleCI';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as yamljs from 'yamljs';
@@ -208,6 +209,8 @@ export class Utils {
 
   static getCI(): CI {
     switch (Utils.properties.options.ci.name.toLowerCase()) {
+      case 'circleci':
+        return new CircleCI();
       case 'travis':
       default:
         return new Travis();
