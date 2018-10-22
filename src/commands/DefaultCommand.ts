@@ -38,15 +38,22 @@ export class DefaultCommand extends AbstractCommand {
     }
 
     // Start deployment of this project
-    const environments: Array<EnvironmentOptions> = await this.getEnvironments();
-    await environments.reduce((previousDeployment, environment) => {
-      return previousDeployment.then(async () => {
-        const docker: Docker = new Docker(environment);
-        await docker.build();
-        await docker.push();
-        await new AWS(environment).deploy();
-      });
-    }, Promise.resolve());
+    if (properties.options.environments) {
+      const environments: Array<EnvironmentOptions> = await this.getEnvironments();
+      await environments.reduce((previousDeployment, environment) => {
+        return previousDeployment.then(async () => {
+          const docker: Docker = new Docker(environment);
+          await docker.build();
+          await docker.push();
+          await new AWS(environment).deploy();
+        });
+      }, Promise.resolve());
+    } else {
+      const docker: Docker = new Docker();
+      await docker.build();
+      await docker.push();
+      await new AWS().deploy();
+    }
 
     this.log.info(`Successfully deployed ${properties.options.name} 🏆`);
   }
