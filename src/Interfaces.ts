@@ -23,7 +23,7 @@ export interface ProjectProperties {
 export interface ACDeployOptions {
   name: string;
   ci: CIOptions;
-  buildPack: BuildPack;
+  buildPack: SupportedBuildPacks|string;
   environments: Environments;
   docker: DockerOptions;
   aws: AWSOptions;
@@ -103,3 +103,4 @@ export interface CI {
 
 export type SupportedCI = 'travis' | 'circleci' | string;
 export type SupportedDockerRepositories = 'aws-ecr';
+export type SupportedBuildPacks = 'PHP' | 'NodeJS' | 'Maven';

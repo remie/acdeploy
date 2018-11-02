@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions, DockerBuildArguments } from '../Interfaces';
+import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions, DockerBuildArguments, BuildPack } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
 import { DefaultCommand } from '../commands/DefaultCommand';
 import { InitCommand } from '../commands/InitCommand';
@@ -79,22 +79,19 @@ export class Utils {
       }
 
       // Determine BuildPack based on project configuration
-      let buildPack: string = (typeof properties.options.buildPack === 'string') ? properties.options.buildPack : undefined;
-      if (!buildPack) {
+      if (!properties.options.buildPack) {
         files.forEach(file => {
           switch (file) {
             case 'pom.xml':
-              buildPack = MavenBuildPack.toString();
+              properties.options.buildPack = MavenBuildPack.toString();
               break;
             case 'composer.json':
-              buildPack = PHPBuildPack.toString();
+              properties.options.buildPack = PHPBuildPack.toString();
               break;
             case 'package.json':
-              buildPack = NodeJSBuildPack.toString();
+              properties.options.buildPack = NodeJSBuildPack.toString();
               break;
           }
-          // @ts-ignore because we are using a string instead of the required BuildPack interface
-          properties.options.buildPack = buildPack;
         });
       }
 
@@ -147,25 +144,7 @@ export class Utils {
       Utils._properties = properties;
     }
 
-    const result = JSON.parse(JSON.stringify(Utils._properties));
-
-    if (typeof result.options.buildPack === 'string') {
-      const files = fs.readdirSync(result.basedir);
-      switch (result.options.buildPack) {
-        case MavenBuildPack.toString():
-          result.options.buildPack = new MavenBuildPack();
-          break;
-        case PHPBuildPack.toString():
-          const useBower = files.indexOf('bower.json') >= 0;
-          result.options.buildPack = new PHPBuildPack(useBower);
-          break;
-        case NodeJSBuildPack.toString():
-          result.options.buildPack = new NodeJSBuildPack();
-          break;
-      }
-    }
-
-    return result;
+    return JSON.parse(JSON.stringify(Utils._properties));
   }
 
   static set properties(value: ProjectProperties) {
@@ -217,9 +196,22 @@ export class Utils {
     }
   }
 
+  static getBuildPack(): BuildPack|null {
+    const files = fs.readdirSync(Utils.properties.basedir);
+    switch (Utils.properties.options.buildPack) {
+      case MavenBuildPack.toString():
+        return new MavenBuildPack();
+      case PHPBuildPack.toString():
+        const useBower = files.indexOf('bower.json') >= 0;
+        return new PHPBuildPack(useBower);
+      case NodeJSBuildPack.toString():
+        return new NodeJSBuildPack();
+    }
+    return null;
+  }
+
   static toYAML(properties: ProjectProperties) {
-    const options: any = Object.assign({}, properties.options);
-    if (options.buildPack) options.buildPack = options.buildPack.toString();
+    const options: any = JSON.parse(JSON.stringify(properties.options));
     fs.writeFileSync(properties.ymlFile, yamljs.stringify(options, 10));
   }
 

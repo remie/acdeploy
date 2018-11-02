@@ -139,15 +139,20 @@ export class Docker {
       return this.properties.options.docker.dockerFile;
     }
 
-    return `
-FROM ${this.properties.options.buildPack.image}:${this.properties.options.buildPack.tag}
+    const buildPack: BuildPack = Utils.getBuildPack();
+    if (buildPack) {
+      return `
+FROM ${buildPack.image}:${buildPack.tag}
 
 ${this.buildArgs}
 
-${this.properties.options.buildPack.body}
+${buildPack.body}
 
-${this.properties.options.buildPack.command}
+${buildPack.command}
 `.trim();
+    } else {
+      throw new Error('Oh my... I could not detect a valid predefined build pack, nor do you have a custom Dockerfile in your YML. Not sure what you want me to do here? 😕');
+    }
   }
 
   private get buildArgs() {
@@ -183,7 +188,10 @@ acdeploy.yaml
 Dockerfile
 `;
 
-    dockerIgnore += this.properties.options.buildPack.dockerignore;
+    const buildPack: BuildPack = Utils.getBuildPack();
+    if (buildPack) {
+      dockerIgnore += buildPack.dockerignore;
+    }
     return dockerIgnore;
   }
 
