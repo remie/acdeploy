@@ -21,8 +21,7 @@ export default class NodeJS extends AbstractBuildPack {
     let version = 8;
     const pkg = require(path.join(process.cwd(), 'package.json'));
     if (pkg.engines && pkg.engines.node) {
-      const maxVersion = semver.maxSatisfying([ '6.0.0', '7.0.0', '8.0.0', '9.0.0', '10.0.0', '11.0.0' ], pkg.engines.node) || `${version}.0.0`;
-      version = semver.major(maxVersion);
+      version = semver.major(semver.coerce(pkg.engines.node));
     }
     return version.toString();
   }
