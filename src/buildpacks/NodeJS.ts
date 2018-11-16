@@ -48,6 +48,7 @@ export default class NodeJS extends AbstractBuildPack {
     if (this.isMeteor) {
       body += `
 ENV METEOR_ALLOW_SUPERUSER=true
+ENV TOOL_NODE_FLAGS=--max-old-space-size=2048
 
 ## Install prerequisites
 RUN apt-get update -y; \
