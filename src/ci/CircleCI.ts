@@ -79,12 +79,12 @@ export class CircleCI implements CI {
     }
 
     if (Utils.properties.options.ci.postdeploy) {
-      Object.keys(Utils.properties.options.ci.predeploy).forEach((job, index) => {
+      Object.keys(Utils.properties.options.ci.postdeploy).forEach((job, index) => {
         const entry = {};
         if (index > 0) {
           entry[job] = {
             requires: [
-              Object.keys(Utils.properties.options.ci.predeploy)[index - 1]
+              Object.keys(Utils.properties.options.ci.postdeploy)[index - 1]
             ]
           };
         } else {
