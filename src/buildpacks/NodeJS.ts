@@ -110,6 +110,9 @@ node_modules
   }
 
   get command() {
+    if (this.isMeteor) {
+      return 'CMD ["node", "dist/bundle/main.js"]';
+    }
     return 'CMD ["npm", "start"]';
   }
 
