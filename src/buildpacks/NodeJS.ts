@@ -86,13 +86,6 @@ RUN npm install
 COPY . ./
 `;
 
-    if (this.isMeteor) {
-      body += `
-RUN meteor build dist --directory
-RUN (cd dist/bundle/programs/server && npm install)
-`;
-    }
-
     if (this.hasPostInstall) {
       body += `
 RUN npm run postinstall
@@ -111,7 +104,7 @@ node_modules
 
   get command() {
     if (this.isMeteor) {
-      return 'CMD ["node", "dist/bundle/main.js"]';
+      return 'CMD ["meteor", "run", "--production"]';
     }
     return 'CMD ["npm", "start"]';
   }
