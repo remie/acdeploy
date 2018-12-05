@@ -308,7 +308,7 @@ export class AWS {
 
   private async createCloudWatchLogGroup(): Promise<void> {
     try {
-      const name = this.properties.options.name;
+      const name = this.properties.options.aws.ecs.service.serviceName;
       const describeLogGroupsResponse: CloudWatchLogs.DescribeLogGroupsResponse = await this.cw.describeLogGroups({ logGroupNamePrefix: name }).promise();
       const loggroups = describeLogGroupsResponse.logGroups.filter(loggroup => loggroup.logGroupName === name);
       const loggroup = loggroups.length === 1 ? loggroups[0] : null;
