@@ -40,6 +40,7 @@ RUN apt-get update; \
   wget \
   unzip \
   libbz2-dev \
+  libzip-dev \
   libcurl4-openssl-dev \
   libpq-dev \
   libedit-dev \
