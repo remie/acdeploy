@@ -18,10 +18,12 @@ export class Docker {
   private aws: AWS;
   private log: bunyan;
   private properties: ProjectProperties;
+  private environment: EnvironmentOptions;
 
   constructor(environment?: EnvironmentOptions) {
     let suffix = environment && environment.suffix ? environment.suffix : '';
     suffix = (suffix === '' || suffix.startsWith('-')) ? suffix : '-' + suffix;
+    this.environment = environment;
 
     // Set the default Docker properties
     this.properties = merge(Utils.properties, {
@@ -106,26 +108,30 @@ export class Docker {
   }
 
   async run(): Promise<void> {
-    this.log.info(`Starting docker container ${this.properties.options.docker.name} with ports 8000->80 and 8443->443. To stop, press ^C`);
-
     // Stop running containers to avoid conflict
     try {
       await this.exec([ 'stop', this.properties.options.docker.name ], false);
       await new Promise((resolve) => setTimeout(() => resolve(), 2000));
     } catch {}
 
+    let port = 80;
     const env = [];
+
     const options = Utils.replaceEnvironmentVariables(this.properties.options, false);
-    if (options.aws &&
-      options.aws.ecs &&
-      options.aws.ecs.taskDefinition &&
-      options.aws.ecs.taskDefinition.containerDefinitions &&
-      options.aws.ecs.taskDefinition.containerDefinitions[0] &&
-      options.aws.ecs.taskDefinition.containerDefinitions[0].environment) {
-      env.push(...options.aws.ecs.taskDefinition.containerDefinitions[0].environment);
+    const aws = this.environment ? merge(this.properties.options.aws, this.environment.aws) : this.properties.options.aws;
+
+    if (aws &&
+      aws.ecs &&
+      aws.ecs.taskDefinition &&
+      aws.ecs.taskDefinition.containerDefinitions &&
+      aws.ecs.taskDefinition.containerDefinitions[0] &&
+      aws.ecs.taskDefinition.containerDefinitions[0].environment) {
+      env.push(...aws.ecs.taskDefinition.containerDefinitions[0].environment);
+      port = aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0].containerPort;
     }
 
-    const args = ['run', '--rm', '--name', this.properties.options.docker.name, '-p', '8000:80', '-p', '8443:443'];
+    this.log.info(`Starting docker container ${this.properties.options.docker.name} with ports 8000->${port}. To stop, press ^C`);
+    const args = ['run', '--rm', '--name', this.properties.options.docker.name, '-p', `8000:${port}`];
     env.forEach((entry) => {
       args.push(...['-e', `${entry.name}=${entry.value}`]);
     });

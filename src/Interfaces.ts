@@ -101,6 +101,10 @@ export interface CI {
   delete: () => void;
 }
 
+export interface ServeProperties {
+  environment?: string;
+}
+
 export type SupportedCI = 'travis' | 'circleci' | string;
 export type SupportedDockerRepositories = 'aws-ecr';
 export type SupportedBuildPacks = 'PHP' | 'NodeJS' | 'Maven';
