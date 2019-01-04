@@ -307,20 +307,22 @@ export class AWS {
   }
 
   private async createCloudWatchLogGroup(): Promise<void> {
-    try {
-      const name = this.properties.options.aws.ecs.service.serviceName;
-      const describeLogGroupsResponse: CloudWatchLogs.DescribeLogGroupsResponse = await this.cw.describeLogGroups({ logGroupNamePrefix: name }).promise();
-      const loggroups = describeLogGroupsResponse.logGroups.filter(loggroup => loggroup.logGroupName === name);
-      const loggroup = loggroups.length === 1 ? loggroups[0] : null;
+    await this.properties.options.aws.ecs.taskDefinition.containerDefinitions.reduce((previousTask, containerDefinition) => previousTask.then(async () => {
+      try {
+        const name = containerDefinition.logConfiguration.options['awslogs-group'];
+        const describeLogGroupsResponse: CloudWatchLogs.DescribeLogGroupsResponse = await this.cw.describeLogGroups({ logGroupNamePrefix: name }).promise();
+        const loggroups = describeLogGroupsResponse.logGroups.filter(loggroup => loggroup.logGroupName === name);
+        const loggroup = loggroups.length === 1 ? loggroups[0] : null;
 
-      // Only create the log group if it doesn't exist
-      if (!loggroup) {
-        this.log.info(`Creating CloudWatch log group ${this.properties.options.name}`);
-        await this.cw.createLogGroup({ logGroupName: this.properties.options.name }).promise();
+        // Only create the log group if it doesn't exist
+        if (!loggroup) {
+          this.log.info(`Creating CloudWatch log group ${name}`);
+          await this.cw.createLogGroup({ logGroupName: name }).promise();
+        }
+      } catch (error) {
+        this.errorHandler(error);
       }
-    } catch (error) {
-      this.errorHandler(error);
-    }
+    }), Promise.resolve());
   }
 
   private async createTaskDefinition(): Promise<void> {
@@ -495,7 +497,6 @@ export class AWS {
                 logDriver: 'awslogs',
                 options: {
                   'awslogs-region': 'us-east-1',
-                  'awslogs-group': name
                 }
               },
             }
@@ -510,6 +511,7 @@ export class AWS {
       // Make sure the cloudwatch region is set to the default region
       result.ecs.taskDefinition.containerDefinitions.forEach((containerDefinition) => {
         containerDefinition.logConfiguration.options['awslogs-region'] = result.region;
+        containerDefinition.logConfiguration.options['awslogs-group'] = result.ecs.service.serviceName;
       });
 
       // Set the service taskDefinition
