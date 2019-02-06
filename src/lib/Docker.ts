@@ -127,7 +127,9 @@ export class Docker {
       aws.ecs.taskDefinition.containerDefinitions[0] &&
       aws.ecs.taskDefinition.containerDefinitions[0].environment) {
       env.push(...aws.ecs.taskDefinition.containerDefinitions[0].environment);
-      port = aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0].containerPort;
+      if (aws.ecs.taskDefinition.containerDefinitions[0].portMappings && aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0]) {
+        port = aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0].containerPort;
+      }
     }
 
     this.log.info(`Starting docker container ${this.properties.options.docker.name} with ports 8000->${port}. To stop, press ^C`);
