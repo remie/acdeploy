@@ -11,7 +11,7 @@ export class ServeCommand extends AbstractCommand {
   async run(): Promise<void> {
     try {
       const properties: ProjectProperties & ServeProperties = await this.getProperties();
-      const environment = properties.options.environments[properties.environment];
+      const environment = properties.environment ? properties.options.environments[properties.environment] : null;
       const docker: Docker = new Docker(environment);
       await docker.build(false);
       await docker.run();
