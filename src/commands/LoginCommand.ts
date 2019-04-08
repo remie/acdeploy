@@ -6,6 +6,7 @@ import { Utils } from '../lib/Utils';
 import * as fs from 'fs-extra';
 import * as ini from 'ini';
 import * as inquirer from 'inquirer';
+import { homedir } from 'os'
 
 export class LoginCommand extends AbstractCommand {
 
@@ -57,7 +58,7 @@ export class LoginCommand extends AbstractCommand {
   }
 
   private async getCredentials() {
-    const configFilePath = `${process.env.HOME}/.aws/credentials`;
+    const configFilePath = `${homedir()}/.aws/credentials`;
     await fs.ensureFile(configFilePath);
 
     const config = ini.parse(await fs.readFile(configFilePath, 'utf-8'));
@@ -65,7 +66,7 @@ export class LoginCommand extends AbstractCommand {
   }
 
   private async setCredentials(credentials: AWSCredentials) {
-    const configFilePath = `${process.env.HOME}/.aws/credentials`;
+    const configFilePath = `${homedir()}/.aws/credentials`;
     await fs.ensureFile(configFilePath);
 
     const properties = Utils.properties;
