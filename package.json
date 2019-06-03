@@ -1,5 +1,5 @@
 {
-  "version": "0.13.1",
+  "version": "0.14.0",
   "name": "@remie/acdeploy",
   "description": "Automatic Container Deployment (acdeploy): keeping you cool while deploying",
   "bin": {
@@ -9,7 +9,7 @@
     "clean": "npx rimraf dist",
     "lint": "npx tslint --project tsconfig.json",
     "build": "npm run clean && npm run lint && npx tsc --project tsconfig.json && npm run chmod",
-    "chmod": "node -e 'require(\"fs\").chmodSync(\"./dist/index.js\", 0o755);'", 
+    "chmod": "node -e 'require(\"fs\").chmodSync(\"./dist/index.js\", 0o755);'",
     "start": "npx nodemon -e ts -w src --exec 'npm run build'",
     "prepack": "npm run build"
   },
