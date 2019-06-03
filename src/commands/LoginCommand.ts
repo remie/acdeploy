@@ -6,7 +6,7 @@ import { Utils } from '../lib/Utils';
 import * as fs from 'fs-extra';
 import * as ini from 'ini';
 import * as inquirer from 'inquirer';
-import { homedir } from 'os'
+import { homedir } from 'os';
 
 export class LoginCommand extends AbstractCommand {
 
