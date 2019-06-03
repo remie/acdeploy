@@ -31,6 +31,10 @@ export default class NodeJS extends AbstractBuildPack {
     return (pkg.scripts && pkg.scripts.postinstall);
   }
 
+  get isYarn(): boolean {
+    return fs.existsSync(path.join(process.cwd(), 'yarn.lock'));
+  }
+
   get isMeteor(): boolean {
     return fs.existsSync(path.join(process.cwd(), '.meteor'));
   }
@@ -58,13 +62,22 @@ RUN apt-get update -y; \
 RUN curl https://install.meteor.com | /bin/sh
 
 `;
+    } else if (this.isYarn) {
+      body += `
+RUN npm install -g yarn;
+`;
     }
 
     body += `
 WORKDIR /opt
 COPY ./package.json package.json
-COPY ./package-lock.json package-lock.json
 `;
+
+    if (this.isYarn) {
+      body += `COPY ./yarn.lock yarn.lock`;
+    } else {
+      body += `COPY ./package-lock.json package-lock.json`;
+    }
 
     if (this.hasNpmToken) {
       body += `
@@ -75,6 +88,10 @@ RUN echo "//registry.npmjs.org/:_authToken=\$\{NPM_TOKEN\}" > .npmrc
     if (this.isMeteor) {
       body += `
 RUN meteor npm install
+`;
+    } else if (this.isYarn) {
+      body += `
+RUN yarn install
 `;
     } else {
       body += `
