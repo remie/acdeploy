@@ -1,9 +1,8 @@
 'use strict';
 
 import { AbstractCommand } from './AbstractCommand';
-import { ProjectProperties } from '../Interfaces';
 import { Utils } from '../lib/Utils';
-import * as fs from 'fs-extra';
+import * as fs from 'fs';
 import * as path from 'path';
 
 export class ClearCommand extends AbstractCommand {
@@ -18,17 +17,17 @@ export class ClearCommand extends AbstractCommand {
 
     // Remove YML file
     if (properties.ymlFile) {
-      await fs.unlink(properties.ymlFile);
+      fs.unlinkSync(properties.ymlFile);
     }
 
     // Remove Dockerfile
-    if (await fs.exists(path.join(properties.basedir, 'Dockerfile'))) {
-      await fs.unlink(path.join(properties.basedir, 'Dockerfile'));
+    if (fs.existsSync(path.join(properties.basedir, 'Dockerfile'))) {
+      fs.unlinkSync(path.join(properties.basedir, 'Dockerfile'));
     }
 
     // Remove Dockerignore
-    if (await fs.exists(path.join(properties.basedir, '.dockerignore'))) {
-      await fs.unlink(path.join(properties.basedir, '.dockerignore'));
+    if (fs.existsSync(path.join(properties.basedir, '.dockerignore'))) {
+      fs.unlinkSync(path.join(properties.basedir, '.dockerignore'));
     }
 
     // Inform the user of our progress

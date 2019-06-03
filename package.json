@@ -20,8 +20,16 @@
   "author": "Remie Bolte <r.bolte@gmail.com>",
   "license": "MIT",
   "devDependencies": {
+    "@types/bunyan": "^1.8.6",
+    "@types/bunyan-format": "^0.2.0",
+    "@types/fs-extra": "^7.0.0",
+    "@types/ini": "^1.3.30",
     "@types/inquirer": "0.0.42",
+    "@types/lodash.merge": "^4.6.6",
+    "@types/minimist": "^1.2.0",
     "@types/node": "^9.4.7",
+    "@types/semver": "^6.0.0",
+    "@types/yamljs": "^0.2.30",
     "tslint": "^5.2.0",
     "typescript": "^2.9.2"
   },

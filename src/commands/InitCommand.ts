@@ -1,11 +1,9 @@
 'use strict';
 
 import { AbstractCommand } from './AbstractCommand';
-import { ProjectProperties, EnvironmentOptions } from '../Interfaces';
+import { ProjectProperties } from '../Interfaces';
 import { Utils } from '../lib/Utils';
-import { AWS } from '../lib/AWS';
 import * as inquirer from 'inquirer';
-import * as merge from 'lodash.merge';
 
 export class InitCommand extends AbstractCommand {
 

@@ -5,7 +5,7 @@
 import { ProjectProperties, AWSOptions, EnvironmentOptions, ECSOptions } from '../Interfaces';
 import { Utils } from './Utils';
 import { STS, EC2, ECR, ECS, ELBv2, CloudWatchLogs, Credentials, SharedIniFileCredentials } from 'aws-sdk';
-import * as merge from 'lodash.merge';
+import merge from 'lodash.merge';
 import * as bunyan from 'bunyan';
 
 // ------------------------------------------------------------------------------------------ Class
@@ -544,7 +544,7 @@ export class AWS {
       if (typeof items[0] === 'string' || typeof items[0] === 'number') {
         result[key] = items[0];
       } else if (items[0] instanceof Array) {
-        result[key] = merge(...items);
+        result[key] = merge({}, ...items);
       } else {
         result[key] = this.mergeRecursive(...items);
       }
@@ -588,7 +588,7 @@ export class AWS {
           }
         } else {
           // We need to reverse the items to ensure the right order is applied by lodash.merge
-          result[key] = merge(...items.reverse());
+          result[key] = merge({}, ...items.reverse());
         }
       } else {
         result[key] = this.mergeRecursive(...items);
@@ -598,7 +598,7 @@ export class AWS {
     return result;
   }
 
-  private nestedType(items: Array<any>): 'string'|'number'|'boolean'|'symbol'|'undefined'|'function'|'array'|'object' {
+  private nestedType(items: Array<any>): 'string'|'number'|'bigint'|'boolean'|'symbol'|'undefined'|'function'|'array'|'object' {
     if (items instanceof Array) {
       let item = null;
       if (items.length === 1) {

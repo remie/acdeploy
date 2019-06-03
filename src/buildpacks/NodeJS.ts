@@ -4,7 +4,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { ProjectProperties, BuildPack } from '../Interfaces';
 import { Utils } from '../lib/Utils';
 import AbstractBuildPack from './AbstractBuildPack';
 import * as semver from 'semver';

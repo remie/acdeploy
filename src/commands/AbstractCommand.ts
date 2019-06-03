@@ -1,10 +1,10 @@
 'use strict';
 
 import { Utils } from '../lib/Utils';
-import { Command, ProjectProperties, CommandLineArgs, EnvironmentOptions } from '../interfaces';
+import { Command, ProjectProperties, EnvironmentOptions } from '../Interfaces';
 import * as bunyan from 'bunyan';
 import * as inquirer from 'inquirer';
-import * as merge from 'lodash.merge';
+import merge from 'lodash.merge';
 
 export abstract class AbstractCommand implements Command {
 

@@ -2,13 +2,13 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, DockerOptions, BuildPack, EnvironmentOptions, ACDeployOptions } from '../Interfaces';
+import { ProjectProperties, BuildPack, EnvironmentOptions } from '../Interfaces';
 import { Utils } from './Utils';
 import { AWS } from './AWS';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as bunyan from 'bunyan';
-import * as merge from 'lodash.merge';
+import merge from 'lodash.merge';
 import { spawn } from 'child_process';
 
 // ------------------------------------------------------------------------------------------ Class

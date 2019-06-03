@@ -2,7 +2,7 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions, DockerBuildArguments, BuildPack } from '../Interfaces';
+import { Command, CommandLineArgs, ProjectProperties, CI, ACDeployOptions, AWSOptions, BuildPack } from '../Interfaces';
 import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
 import { DefaultCommand } from '../commands/DefaultCommand';
 import { InitCommand } from '../commands/InitCommand';
@@ -13,19 +13,16 @@ import { ClearCommand } from '../commands/ClearCommand';
 import { Travis } from '../ci/Travis';
 import { CircleCI } from '../ci/CircleCI';
 import * as fs from 'fs-extra';
-import * as path from 'path';
-import * as yamljs from 'yamljs';
+import yamljs from 'yamljs';
 import * as bunyan from 'bunyan';
-import * as logFormatter from 'bunyan-format';
-import * as merge from 'lodash.merge';
-import slugify from 'slugify';
-import * as minimist from 'minimist';
+import logFormatter from 'bunyan-format';
+import minimist from 'minimist';
 
 // ------------------------------------------------------------------------------------------ Variables
 
 const log = bunyan.createLogger({
   name: 'acdeploy',
-  stream: logFormatter({ outputMode: 'short' }),
+  stream: new logFormatter({ outputMode: 'short' }),
   level: 'info'
 });
 
@@ -35,7 +32,7 @@ export class Utils {
 
   private static _properties;
 
-  static getLogger() {
+  static getLogger(): bunyan {
     return log;
   }
 

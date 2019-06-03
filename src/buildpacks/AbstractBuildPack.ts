@@ -2,19 +2,19 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, BuildPack } from '../Interfaces';
+import { BuildPack } from '../Interfaces';
 
 // ------------------------------------------------------------------------------------------ Class
 
 export default abstract class AbstractBuildPack implements BuildPack {
 
-  abstract get image();
+  abstract get image(): string;
 
   get tag() {
     return 'latest';
   }
 
-  abstract get body();
+  abstract get body(): string;
 
   get command() {
     return '';

@@ -2,7 +2,6 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, BuildPack } from '../Interfaces';
 import AbstractBuildPack from './AbstractBuildPack';
 
 // ------------------------------------------------------------------------------------------ Class

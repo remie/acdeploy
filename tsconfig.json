@@ -8,16 +8,18 @@
         "module": "commonjs",
         "target": "es6",
         "noImplicitAny": false,
+        "esModuleInterop": true,
         "suppressImplicitAnyIndexErrors": true,
         "emitDecoratorMetadata": true,
         "declaration": true,
-        "rootDir": "./src",
         "outDir": "./dist"
     },
     "includes": [
-        "src/**/*.ts"
+        "./src/**/*.ts",
+        "./typings/**.d.ts"
     ],
     "exclude": [
-        "node_modules"
+        "**/node_modules/**",
+        "**/dist/**"
     ]
 }

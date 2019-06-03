@@ -2,23 +2,15 @@
 
 // ------------------------------------------------------------------------------------------ Dependencies
 
-import { ProjectProperties, CI } from '../Interfaces';
+import { CI } from '../Interfaces';
 import { Utils } from '../lib/Utils';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as yamljs from 'yamljs';
 
-import { PHPBuildPack, MavenBuildPack, NodeJSBuildPack } from '../buildpacks';
-
 // ------------------------------------------------------------------------------------------ Class
 
 export class Travis implements CI {
-
-  private log;
-
-  constructor() {
-    this.log = Utils.getLogger();
-  }
 
   create() {
     fs.writeFileSync(path.join(process.cwd(), this.filename), this.yml);

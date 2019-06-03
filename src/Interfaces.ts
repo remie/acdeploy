@@ -1,7 +1,5 @@
 'use strict';
 
-import { ECS } from 'aws-sdk';
-
 // ------------------------------------------------------------------------------------------ Interfaces
 
 export interface Command {
