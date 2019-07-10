@@ -57,9 +57,10 @@ export class ApplyCommand extends AbstractCommand {
         type: 'checkbox',
         name: 'options.aws.ecs.loadbalancer.Subnets',
         message: `Pick the subnets for the application load balancer`,
-        when: (answers) => !(defaults.options.aws && defaults.options.aws.ecs && defaults.options.aws.ecs.loadbalancer.Subnets),
+        when: (answers) => !(defaults.options.aws && defaults.options.aws.ecs && defaults.options.aws.ecs.loadbalancer && defaults.options.aws.ecs.loadbalancer.Subnets),
         choices: async (answers) => {
-          const availableSubnets = await aws.getSubnets(answers.options.aws.vpcId);
+          const vpcId = answers.options && answers.options.aws && answers.options.aws.vpcId ? answers.options.aws.vpcId : defaults.options.aws.vpcId;
+          const availableSubnets = await aws.getSubnets(vpcId);
           return availableSubnets.map((subnet) => {
             const name = subnet.Tags.reduce((prev: string, next) => {
               if (next.Key === 'Name') return next.Value;
