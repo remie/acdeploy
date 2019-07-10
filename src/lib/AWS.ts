@@ -229,6 +229,17 @@ export class AWS {
         process.exit(-1);
       }
 
+      // Make sure these entries are Arrays
+      ['Subnets', 'SecurityGroups'].forEach((arrayLikeObject) => {
+        if (!Array.isArray(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject])) {
+          const items = [];
+          Object.keys(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject]).forEach(key => {
+            items.push(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject][key]);
+          });
+          this.properties.options.aws.ecs.loadbalancer[arrayLikeObject] = items;
+        }
+      });
+
       this.log.info(`Creating Application Load Balancer for ${this.properties.options.name}`);
       const response = await this.elb.createLoadBalancer(this.properties.options.aws.ecs.loadbalancer).promise();
       return response.LoadBalancers[0];
