@@ -25,6 +25,7 @@ export interface ACDeployOptions {
   environments: Environments;
   docker: DockerOptions;
   aws: AWSOptions;
+  type?: 'web' | 'task';
 }
 
 export interface Environments {

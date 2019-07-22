@@ -76,9 +76,11 @@ export class AWS {
 
     await this.createRepository();
     await this.createCluster();
-    await this.createLoadbalancer();
-    await this.createTargetGroup();
-    await this.createListener();
+    if (this.properties.options.type === 'web') {
+      await this.createLoadbalancer();
+      await this.createTargetGroup();
+      await this.createListener();
+    }
     await this.createCloudWatchLogGroup();
     await this.createTaskDefinition();
     await this.createService();
@@ -409,16 +411,18 @@ export class AWS {
 
       if (!service) {
         this.log.info(`Creating service ${this.properties.options.aws.ecs.service.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${this.properties.options.aws.ecs.service.taskDefinition} 🚀`);
-        const createServiceResponse = await this.ecs.createService(merge({
-            cluster: await this.getClusterARN(),
-            loadBalancers: [
-              {
-                targetGroupArn: await this.getTargetGroupARN()
-              }
-            ]
-          }, this.properties.options.aws.ecs.service)
-        ).promise();
-        return createServiceResponse.service;
+
+        const cluster = await this.getClusterARN();
+        const createServiceOptions = merge({ cluster }, this.properties.options.aws.ecs.service);
+
+        // Only bind the service to a load balancer if we are deploying a web application
+        if (this.properties.options.type === 'web') {
+          const targetGroupArn = await this.getTargetGroupARN();
+          createServiceOptions.loadBalancers = [ { targetGroupArn } ];
+        }
+
+        const { service } = await this.ecs.createService(createServiceOptions).promise();
+        return service;
       } else {
         this.log.info(`Updating service ${this.properties.options.aws.ecs.service.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${this.properties.options.aws.ecs.service.taskDefinition} 🚀`);
         const updateServiceResponse = await this.ecs.updateService({
@@ -517,6 +521,14 @@ export class AWS {
     };
 
     const result: AWSOptions = this.mergeAWSOptions(env, fromYml, defaults);
+
+    // Remove load balancer / target group if we are not deploying a web application
+    if (properties.options.type !== 'web') {
+      delete result.ecs.loadbalancer;
+      delete result.ecs.listener;
+      delete result.ecs.targetGroup;
+      delete result.ecs.service.loadBalancers;
+    }
 
     if (result.ecs && result.ecs.taskDefinition) {
       // Make sure the cloudwatch region is set to the default region

@@ -75,6 +75,17 @@ export class Utils {
         properties.options = {} as ACDeployOptions;
       }
 
+      // Set the default type
+      if (!properties.options.type) {
+        properties.options.type = 'web';
+      }
+
+      if (properties.options.type !== 'web' && properties.options.type !== 'task') {
+        log.error(`Oh nooo! You have put an unknown value for "type" in your acdeploy config file. I only understand 'web' or 'task'.`);
+        log.error(`Your value: ${properties.options.type}`);
+        process.exit(-1);
+      }
+
       // Determine BuildPack based on project configuration
       if (!properties.options.buildPack) {
         files.forEach(file => {
