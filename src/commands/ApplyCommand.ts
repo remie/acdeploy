@@ -14,14 +14,13 @@ export class ApplyCommand extends AbstractCommand {
 
     this.log.info(`Creating Amazon Web Services infrastructure for ${properties.options.name} 🤞`);
     if (properties.options.environments && Object.keys(properties.options.environments).length > 0) {
-      await Object.keys(properties.options.environments).reduce((previousTask, name) => {
-        return previousTask.then(async () => {
-          const environment = properties.options.environments[name];
-          if (environment.enabled) {
-            this.log.info(`Provisioning ${name} environment...`);
-            await new AWS(environment).apply();
-          }
-        });
+      await Object.keys(properties.options.environments).reduce(async (previousTask, name) => {
+        await previousTask;
+        const environment = properties.options.environments[name];
+        if (environment.enabled) {
+          this.log.info(`Provisioning ${name} environment...`);
+          await new AWS(environment).apply();
+        }
       }, Promise.resolve());
     } else {
       await new AWS().apply();
@@ -37,7 +36,7 @@ export class ApplyCommand extends AbstractCommand {
         type: 'list',
         name: 'options.aws.vpcId',
         message: `Pick the default VPC`,
-        suffix: `\n  VPC not in this list? Specify the correct region in 'acdeploy.tml > aws > region'`,
+        suffix: `\n  VPC not in this list? Specify the correct region in 'acdeploy.yml > aws > region'`,
         when: (answers) => !(defaults.options.aws && defaults.options.aws.vpcId),
         choices: async () => {
           const vpcs = await aws.getVPCs();
