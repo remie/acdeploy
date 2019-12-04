@@ -45,6 +45,7 @@ RUN apt-get update; \
   libedit-dev \
   zlib1g-dev \
   libpng-dev \
+  libonig-dev \
   libjpeg-dev; \
   wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg; \
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list; \
