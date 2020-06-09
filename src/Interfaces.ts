@@ -21,7 +21,7 @@ export interface ProjectProperties {
 export interface ACDeployOptions {
   name: string;
   ci: CIOptions;
-  buildPack: SupportedBuildPacks|string;
+  buildPack: SupportedBuildPacks|string|BuildPack;
   environments: Environments;
   docker: DockerOptions;
   aws: AWSOptions;
@@ -49,6 +49,8 @@ export interface CIOptions {
 export interface DockerOptions {
   name: string;
   dockerFile: string;
+  preBuildPack: string;
+  postBuildPack: string;
   buildArgs: Array<DockerBuildArguments>;
   repository: DockerRepositoryOptions;
 }

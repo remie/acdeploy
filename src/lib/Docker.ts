@@ -154,7 +154,11 @@ FROM ${buildPack.image}:${buildPack.tag}
 
 ${this.buildArgs}
 
+${this.preBuildPack}
+
 ${buildPack.body}
+
+${this.postBuildPack}
 
 ${buildPack.command}
 `.trim();
@@ -180,6 +184,14 @@ ENV ${buildArg.name}=\$\{${buildArg.name}\}
     }
 
     return args;
+  }
+
+  private get preBuildPack() {
+    return this.properties.options.docker.preBuildPack || '';
+  }
+
+  private get postBuildPack() {
+    return this.properties.options.docker.postBuildPack || '';
   }
 
   private getDockerIgnore() {

@@ -206,16 +206,20 @@ export class Utils {
 
   static getBuildPack(): BuildPack|null {
     const files = fs.readdirSync(Utils.properties.basedir);
-    switch (Utils.properties.options.buildPack) {
-      case MavenBuildPack.toString():
-        return new MavenBuildPack();
-      case PHPBuildPack.toString():
-        const useBower = files.indexOf('bower.json') >= 0;
-        return new PHPBuildPack(useBower);
-      case NodeJSBuildPack.toString():
-        return new NodeJSBuildPack();
+    if (typeof Utils.properties.options.buildPack === 'string') {
+      switch (Utils.properties.options.buildPack) {
+        case MavenBuildPack.toString():
+          return new MavenBuildPack();
+        case PHPBuildPack.toString():
+          const useBower = files.indexOf('bower.json') >= 0;
+          return new PHPBuildPack(useBower);
+        case NodeJSBuildPack.toString():
+          return new NodeJSBuildPack();
+      }
+      return null;
+    } else {
+      return Utils.properties.options.buildPack;
     }
-    return null;
   }
 
   static toYAML(properties: ProjectProperties) {
