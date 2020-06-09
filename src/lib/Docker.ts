@@ -118,15 +118,18 @@ export class Docker {
     const env = [];
 
     const options = Utils.replaceEnvironmentVariables(this.properties.options, false);
-    const aws = this.environment ? merge(this.properties.options.aws, this.environment.aws) : this.properties.options.aws;
+    const aws = this.environment ? merge(options.aws, this.environment.aws) : options.aws;
 
     if (aws &&
       aws.ecs &&
       aws.ecs.taskDefinition &&
       aws.ecs.taskDefinition.containerDefinitions &&
-      aws.ecs.taskDefinition.containerDefinitions[0] &&
-      aws.ecs.taskDefinition.containerDefinitions[0].environment) {
-      env.push(...aws.ecs.taskDefinition.containerDefinitions[0].environment);
+      aws.ecs.taskDefinition.containerDefinitions[0]) {
+
+      if (aws.ecs.taskDefinition.containerDefinitions[0].environment) {
+        env.push(...aws.ecs.taskDefinition.containerDefinitions[0].environment);
+      }
+
       if (aws.ecs.taskDefinition.containerDefinitions[0].portMappings && aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0]) {
         port = aws.ecs.taskDefinition.containerDefinitions[0].portMappings[0].containerPort;
       }
