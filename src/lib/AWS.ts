@@ -233,7 +233,7 @@ export class AWS {
 
       // Make sure these entries are Arrays
       ['Subnets', 'SecurityGroups'].forEach((arrayLikeObject) => {
-        if (!Array.isArray(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject])) {
+        if (this.properties.options.aws.ecs.loadbalancer && this.properties.options.aws.ecs.loadbalancer[arrayLikeObject] && !Array.isArray(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject])) {
           const items = [];
           Object.keys(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject]).forEach(key => {
             items.push(this.properties.options.aws.ecs.loadbalancer[arrayLikeObject][key]);
@@ -341,13 +341,10 @@ export class AWS {
   private async createTaskDefinition(): Promise<void> {
     try {
       const repositoryUri = await this.getRepositoryURI();
-      const taskDefinition: ECS.RegisterTaskDefinitionRequest = merge({
-        containerDefinitions: [
-          {
-            image: `${repositoryUri}:latest`,
-          }
-        ]
-      }, this.properties.options.aws.ecs.taskDefinition);
+      const taskDefinition: ECS.RegisterTaskDefinitionRequest = {...this.properties.options.aws.ecs.taskDefinition};
+      taskDefinition.containerDefinitions.forEach(containerDefinition => {
+        containerDefinition.image = `${repositoryUri}:latest`;
+      });
 
       // Register the task definition
       this.log.info('Registering ECS task definition 📄');
@@ -418,14 +415,13 @@ export class AWS {
         // Only bind the service to a load balancer if we are deploying a web application
         if (this.properties.options.type === 'web') {
           const targetGroupArn = await this.getTargetGroupARN();
-          createServiceOptions.loadBalancers = [ { targetGroupArn } ];
+          createServiceOptions.loadBalancers = this.properties.options.aws.ecs.service.loadBalancers.map(item => ({...item, targetGroupArn}));
         }
 
         const { service } = await this.ecs.createService(createServiceOptions).promise();
         return service;
       } else {
-        this.log.info(`Updating service ${this.properties.options.aws.ecs.service.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${this.properties.options.aws.ecs.service.taskDefinition} 🚀`);
-        const updateServiceResponse = await this.ecs.updateService({
+        const updateServiceRequest = {
           cluster: service.clusterArn,
           service: service.serviceName,
           desiredCount: this.properties.options.aws.ecs.service.desiredCount,
@@ -435,7 +431,10 @@ export class AWS {
           platformVersion: this.properties.options.aws.ecs.service.platformVersion,
           healthCheckGracePeriodSeconds: this.properties.options.aws.ecs.service.healthCheckGracePeriodSeconds,
           forceNewDeployment: false
-        }).promise();
+        };
+
+        this.log.info(`Updating service ${this.properties.options.aws.ecs.service.serviceName} on cluster ${this.properties.options.aws.ecs.cluster.clusterName} for task definition ${this.properties.options.aws.ecs.service.taskDefinition} 🚀`);
+        const updateServiceResponse = await this.ecs.updateService(updateServiceRequest).promise();
         return updateServiceResponse.service;
       }
     } catch (error) {
@@ -530,7 +529,23 @@ export class AWS {
       delete result.ecs.service.loadBalancers;
     }
 
-    if (result.ecs && result.ecs.taskDefinition) {
+    if (result.ecs.service.networkConfiguration) {
+      const networkConfiguration = result.ecs.service.networkConfiguration;
+      if (networkConfiguration.awsvpcConfiguration && networkConfiguration.awsvpcConfiguration.subnets) {
+        const result: Array<string> = [];
+        Object.keys(networkConfiguration.awsvpcConfiguration.subnets).map(key => networkConfiguration.awsvpcConfiguration.subnets[key]).forEach(item => result.push(item));
+        networkConfiguration.awsvpcConfiguration.subnets = result;
+      }
+
+      if (networkConfiguration.awsvpcConfiguration && networkConfiguration.awsvpcConfiguration.securityGroups) {
+        const result: Array<string> = [];
+        Object.keys(networkConfiguration.awsvpcConfiguration.securityGroups).map(key => networkConfiguration.awsvpcConfiguration.securityGroups[key]).forEach(item => result.push(item));
+        networkConfiguration.awsvpcConfiguration.securityGroups = result;
+      }
+      result.ecs.service.networkConfiguration = networkConfiguration;
+    }
+
+    if (result.ecs && result.ecs.taskDefinition && result.ecs.taskDefinition.containerDefinitions) {
       // Make sure the cloudwatch region is set to the default region
       result.ecs.taskDefinition.containerDefinitions.forEach((containerDefinition) => {
         containerDefinition.logConfiguration.options['awslogs-region'] = result.region;
