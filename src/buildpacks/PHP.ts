@@ -44,6 +44,7 @@ RUN apt-get update; \
   libpq-dev \
   libedit-dev \
   zlib1g-dev \
+  libonig-dev \
   libpng-dev \
   libjpeg-dev; \
   wget -O /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg; \
