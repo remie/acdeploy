@@ -49,6 +49,6 @@ If you wish to also use ACDeploy for local development, you will need to install
 
 # ACDeploy configuration
 
-If you run `acdeploy init` you will be asked some basic questions. To make this as easy as possible, ACDeploy will try to ask you as little information as possible, and will assume the rest. If you do not feel comfortable with those assumptions, or if you are curious what ACDeploy does, you can check the `.acdeploy.yml` file which will be added to your project after running `acdeploy init`.
+If you run `acdeploy init` you will be asked some of the  basic questions. To make this as easy as possible, ACDeploy will try to ask you as little information as possible, and will assume the rest. If you do not feel comfortable with those assumptions, or if you are curious what ACDeploy does, you can check the `.acdeploy.yml` file which will be added to your project after running `acdeploy init`.
 
 _Important note_: the `AWS` section of the YML file is based on the [AWS SDK for Javascript](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/index.html). If you wish to change that configuration, you can use the AWS documentation to check which properties you can add/remove
